@@ -1,0 +1,9 @@
+{
+  "riotApiKey": "RGAPI-3b5aed6c-bf76-4a59-a011-64d676f6ccc0",
+  "region": "euw1",
+  "pollingInterval": 90000,
+  "overlayPosition": {
+    "x": 20,
+    "y": 100
+  }
+}

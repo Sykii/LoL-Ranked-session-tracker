@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoL Session Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>LoL Session Tracker</h1>
+      <p>Gestiona tus cuentas y trackea tus sesiones ranked</p>
+    </header>
+
+    <section class="add-account">
+      <h2>Añadir Cuenta</h2>
+      <div class="form-group">
+        <input type="text" id="gameName" placeholder="Game Name (ej: Faker)">
+        <input type="text" id="tagLine" placeholder="Tag (ej: KR1)">
+        <button id="addBtn">Añadir</button>
+      </div>
+      <p class="hint">Introduce el Riot ID completo (nombre#tag)</p>
+    </section>
+
+    <section class="accounts">
+      <h2>Cuentas</h2>
+      <div id="accountsList"></div>
+    </section>
+
+    <section class="session-stats">
+      <h2>Estadísticas de Sesión</h2>
+      <div id="sessionData">
+        <p>Selecciona una cuenta para ver estadísticas</p>
+      </div>
+      <div class="button-group">
+        <button id="resetBtn" style="display:none;">Reset Sesión</button>
+        <button id="toggleOverlayBtn" style="display:none;">Ocultar Overlay</button>
+      </div>
+    </section>
+
+    <section class="obs-info" style="display:none;" id="obsSection">
+      <h2>🎥 OBS Browser Source</h2>
+      <p class="obs-instructions">Para usar en OBS Studio:</p>
+      <ol class="obs-steps">
+        <li>En OBS, añade una fuente <strong>"Navegador"</strong></li>
+        <li>Marca la casilla <strong>"Local file"</strong></li>
+        <li>Copia y pega esta ruta:</li>
+      </ol>
+      <div class="path-box">
+        <input type="text" id="obsPath" readonly>
+        <button id="copyPathBtn">Copiar</button>
+      </div>
+      <p class="obs-note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
+    </section>
+
+    <footer>
+      <p>Los datos se actualizan cada 90 segundos | Riot API Rate Limit: 20/s</p>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: transparent;
+      overflow: hidden;
+      -webkit-app-region: drag;
+    }
+
+    .overlay-container {
+      width: 300px;
+      background: rgba(17, 24, 39, 0.95);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid rgba(75, 85, 99, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+
+    /* ACCOUNT NAME HEADER */
+    .account-header {
+      text-align: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+    }
+
+    .account-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: none;
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+    }
+
+    /* RANK SECTION con icono */
+    .rank-section {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rank-icon {
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.4));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .rank-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .rank-tier-lp {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 3px;
+      flex-wrap: wrap;
+    }
+
+    .rank-tier {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+      }
+      to {
+        text-shadow: 0 2px 20px rgba(251, 191, 36, 0.6);
+      }
+    }
+
+    .rank-lp {
+      font-size: 15px;
+      color: #d1d5db;
+      font-weight: 700;
+    }
+
+    /* WR y NET LP en misma línea */
+    .rank-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #9ca3af;
+      font-weight: 500;
+      flex-wrap: wrap;
+    }
+
+    .separator {
+      color: #4b5563;
+      font-weight: 300;
+    }
+
+    .net-lp-inline {
+      font-weight: 700;
+      font-size: 10px;
+    }
+
+    .net-lp-inline.positive {
+      color: #34d399;
+    }
+
+    .net-lp-inline.negative {
+      color: #f87171;
+    }
+
+    /* SESSION SECTION - Header con WR */
+    .session-section {
+      margin-top: 10px;
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .session-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: #6b7280;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .session-wr-inline {
+      font-size: 10px;
+      color: #60a5fa;
+      font-weight: 600;
+      background: rgba(59, 130, 246, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .session-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-box {
+      background: rgba(31, 41, 55, 0.6);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      border: 1px solid rgba(75, 85, 99, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .stat-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 2px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      transition: all 0.3s ease;
+      line-height: 1;
+    }
+
+    .stat-value.wins {
+      color: #34d399;
+    }
+
+    .stat-value.losses {
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-container">
+    <!-- ACCOUNT NAME -->
+    <div class="account-header">
+      <div class="account-name" id="accountName">No Account</div>
+    </div>
+    
+    <!-- RANK SECTION CON ICONO -->
+    <div class="rank-section">
+      <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
+      
+      <div class="rank-info">
+        <div class="rank-tier-lp">
+          <div class="rank-tier" id="rankTier">UNRANKED</div>
+          <div class="rank-lp" id="rankLP">0 LP</div>
+        </div>
+        
+        <div class="rank-stats">
+          <span id="totalWR">0% WR</span>
+          <span class="separator">|</span>
+          <span class="net-lp-inline" id="netLP">+0 LP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION SECTION -->
+    <div class="session-section">
+      <div class="session-header">
+        <div class="session-title">Sesión Actual</div>
+        <div class="session-wr-inline" id="sessionWR">0%</div>
+      </div>
+      
+      <div class="session-stats">
+        <div class="stat-box">
+          <div class="stat-label">Wins</div>
+          <div class="stat-value wins" id="sessionWins">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Losses</div>
+          <div class="stat-value losses" id="sessionLosses">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getRankIcon(tier) {
+      const tierMap = {
+        'IRON': 'iron',
+        'BRONZE': 'bronze',
+        'SILVER': 'silver',
+        'GOLD': 'gold',
+        'PLATINUM': 'platinum',
+        'EMERALD': 'emerald',
+        'DIAMOND': 'diamond',
+        'MASTER': 'master',
+        'GRANDMASTER': 'grandmaster',
+        'CHALLENGER': 'challenger',
+        'UNRANKED': 'unranked'
+      };
+      
+      const iconName = tierMap[tier] || 'unranked';
+      return `../assets/ranks/${iconName}.png`;
+    }
+
+    window.api.onUpdateOverlay((data) => {
+      // Actualizar nombre de cuenta
+      document.getElementById('accountName').textContent = data.accountName || 'No Account';
+
+      // Actualizar icono de rank
+      const rankIconEl = document.getElementById('rankIcon');
+      rankIconEl.src = getRankIcon(data.tier);
+
+      // Actualizar rank (tier + LP)
+      const rankText = data.tier !== 'UNRANKED' 
+        ? `${data.tier} ${data.rank}` 
+        : 'UNRANKED';
+      document.getElementById('rankTier').textContent = rankText;
+      document.getElementById('rankLP').textContent = `${data.lp} LP`;
+      
+      // WR total
+      document.getElementById('totalWR').textContent = `${data.totalWinrate}% WR`;
+
+      // Net LP (inline con WR)
+      const netLPEl = document.getElementById('netLP');
+      const netLP = data.sessionNetLP || 0;
+      netLPEl.textContent = `${netLP >= 0 ? '+' : ''}${netLP} LP`;
+      netLPEl.className = 'net-lp-inline ' + (netLP >= 0 ? 'positive' : 'negative');
+
+      // Session WR (inline con título) - AÑADIR "WR"
+      document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
+
+      // Wins/Losses
+      document.getElementById('sessionWins').textContent = data.sessionWins;
+      document.getElementById('sessionLosses').textContent = data.sessionLosses;
+    });
+  </script>
+</body>
+</html>
