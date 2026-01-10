@@ -18,19 +18,26 @@
     }
 
     .overlay-container {
-      width: 300px;
+      width: 340px;
       background: rgba(17, 24, 39, 0.95);
       border-radius: 16px;
       padding: 14px;
       border: 1px solid rgba(75, 85, 99, 0.3);
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+
+    .overlay-container.tryhard {
+      background: rgba(20, 0, 0, 0.95);
+      border-color: rgba(220, 38, 38, 0.5);
+      box-shadow: 0 20px 60px rgba(220, 38, 38, 0.3), 0 0 40px rgba(220, 38, 38, 0.2);
     }
 
     /* ACCOUNT NAME HEADER */
     .account-header {
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       padding-bottom: 8px;
       border-bottom: 1px solid rgba(75, 85, 99, 0.2);
     }
@@ -42,21 +49,63 @@
       text-transform: none;
       letter-spacing: 0.3px;
       text-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
+      transition: all 0.3s ease;
     }
 
-    /* RANK SECTION con icono */
+    .overlay-container.tryhard .account-name::before {
+      content: "🔥 ";
+    }
+
+    .overlay-container.tryhard .account-name::after {
+      content: " !TRYHARD";
+      color: #dc2626;
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.8);
+      animation: blink-tryhard 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink-tryhard {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .overlay-container.tryhard .rank-tier {
+      color: #dc2626;
+      text-shadow: 0 2px 10px rgba(220, 38, 38, 0.6);
+    }
+
+    .overlay-container.tryhard .stat-value.wins {
+      color: #ef4444;
+    }
+
+    .overlay-container.tryhard .session-wr {
+      background: rgba(220, 38, 38, 0.2);
+      border-color: rgba(220, 38, 38, 0.4);
+      color: #fca5a5;
+    }
+
+    .overlay-container.tryhard .session-title {
+      color: #dc2626;
+    }
+
+    /* MAIN CONTENT - 2 COLUMNAS */
+    .main-content {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    /* RANK SECTION (Izquierda) */
     .rank-section {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(75, 85, 99, 0.3);
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
     .rank-icon {
-      width: 50px;
-      height: 50px;
+      width: 64px;
+      height: 64px;
       flex-shrink: 0;
       filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.4));
       animation: float 3s ease-in-out infinite;
@@ -68,25 +117,19 @@
     }
 
     .rank-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .rank-tier-lp {
       display: flex;
-      align-items: baseline;
-      gap: 6px;
-      margin-bottom: 3px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .rank-tier {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: #fbbf24;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+      line-height: 1;
       animation: glow 2s ease-in-out infinite alternate;
     }
 
@@ -100,88 +143,84 @@
     }
 
     .rank-lp {
-      font-size: 15px;
+      font-size: 14px;
       color: #d1d5db;
       font-weight: 700;
+      line-height: 1;
     }
 
-    /* WR y NET LP en misma línea */
-    .rank-stats {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .rank-wr {
       font-size: 10px;
       color: #9ca3af;
       font-weight: 500;
-      flex-wrap: wrap;
+      line-height: 1;
     }
 
-    .separator {
-      color: #4b5563;
-      font-weight: 300;
-    }
-
-    .net-lp-inline {
+    .rank-net-lp {
+      font-size: 11px;
       font-weight: 700;
-      font-size: 10px;
+      line-height: 1;
     }
 
-    .net-lp-inline.positive {
+    .rank-net-lp.positive {
       color: #34d399;
     }
 
-    .net-lp-inline.negative {
+    .rank-net-lp.negative {
       color: #f87171;
     }
 
-    /* SESSION SECTION - Header con WR */
+    /* SESSION SECTION (Derecha) */
     .session-section {
-      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .session-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(75, 85, 99, 0.2);
     }
 
     .session-title {
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
       color: #6b7280;
-      letter-spacing: 1px;
+      letter-spacing: 0.8px;
       font-weight: 600;
     }
 
-    .session-wr-inline {
+    .session-wr {
       font-size: 10px;
       color: #60a5fa;
       font-weight: 600;
       background: rgba(59, 130, 246, 0.1);
-      padding: 3px 8px;
-      border-radius: 4px;
+      padding: 2px 6px;
+      border-radius: 3px;
       border: 1px solid rgba(59, 130, 246, 0.2);
     }
 
     .session-stats {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
 
     .stat-box {
       background: rgba(31, 41, 55, 0.6);
-      border-radius: 8px;
-      padding: 8px 10px;
+      border-radius: 6px;
+      padding: 6px;
       text-align: center;
       border: 1px solid rgba(75, 85, 99, 0.2);
       transition: all 0.3s ease;
     }
 
     .stat-box:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
     }
 
     .stat-label {
@@ -194,7 +233,7 @@
     }
 
     .stat-value {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 800;
       transition: all 0.3s ease;
       line-height: 1;
@@ -243,39 +282,36 @@
       <div class="account-name" id="accountName">No Account</div>
     </div>
     
-    <!-- RANK SECTION CON ICONO -->
-    <div class="rank-section">
-      <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
-      
-      <div class="rank-info">
-        <div class="rank-tier-lp">
+    <!-- MAIN CONTENT: 2 COLUMNAS -->
+    <div class="main-content">
+      <!-- COLUMNA IZQUIERDA: RANK -->
+      <div class="rank-section">
+        <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
+        
+        <div class="rank-info">
           <div class="rank-tier" id="rankTier">UNRANKED</div>
           <div class="rank-lp" id="rankLP">0 LP</div>
+          <div class="rank-wr" id="totalWR">0% WR</div>
+          <div class="rank-net-lp" id="netLP">+0 LP</div>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: SESSION -->
+      <div class="session-section">
+        <div class="session-header">
+          <div class="session-title">SESIÓN</div>
+          <div class="session-wr" id="sessionWR">0% WR</div>
         </div>
         
-        <div class="rank-stats">
-          <span id="totalWR">0% WR</span>
-          <span class="separator">|</span>
-          <span class="net-lp-inline" id="netLP">+0 LP</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- SESSION SECTION -->
-    <div class="session-section">
-      <div class="session-header">
-        <div class="session-title">Sesión Actual</div>
-        <div class="session-wr-inline" id="sessionWR">0%</div>
-      </div>
-      
-      <div class="session-stats">
-        <div class="stat-box">
-          <div class="stat-label">Wins</div>
-          <div class="stat-value wins" id="sessionWins">0</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Losses</div>
-          <div class="stat-value losses" id="sessionLosses">0</div>
+        <div class="session-stats">
+          <div class="stat-box">
+            <div class="stat-label">W</div>
+            <div class="stat-value wins" id="sessionWins">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">L</div>
+            <div class="stat-value losses" id="sessionLosses">0</div>
+          </div>
         </div>
       </div>
     </div>
@@ -317,6 +353,14 @@
         const winsChanged = lastData && lastData.sessionWins !== data.sessionWins;
         const lossesChanged = lastData && lastData.sessionLosses !== data.sessionLosses;
 
+        // Aplicar modo tryhard
+        const container = document.querySelector('.overlay-container');
+        if (data.tryHardMode) {
+          container.classList.add('tryhard');
+        } else {
+          container.classList.remove('tryhard');
+        }
+
         // Actualizar nombre de cuenta
         document.getElementById('accountName').textContent = data.accountName || 'No Account';
 
@@ -327,23 +371,21 @@
           rankIconEl.src = newIcon;
         }
 
-        // Actualizar rank (tier + LP)
+        // Actualizar rank info
         const rankText = data.tier !== 'UNRANKED' 
           ? `${data.tier} ${data.rank}` 
           : 'UNRANKED';
         document.getElementById('rankTier').textContent = rankText;
         document.getElementById('rankLP').textContent = `${data.lp} LP`;
-        
-        // WR total
         document.getElementById('totalWR').textContent = `${data.totalWinrate}% WR`;
 
-        // Net LP (inline con WR)
+        // Net LP
         const netLPEl = document.getElementById('netLP');
         const netLP = data.sessionNetLP || 0;
         netLPEl.textContent = `${netLP >= 0 ? '+' : ''}${netLP} LP`;
-        netLPEl.className = 'net-lp-inline ' + (netLP >= 0 ? 'positive' : 'negative');
+        netLPEl.className = 'rank-net-lp ' + (netLP >= 0 ? 'positive' : 'negative');
 
-        // Session WR (inline con título) - AÑADIR "WR"
+        // Session WR
         document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
 
         // Wins/Losses con animación

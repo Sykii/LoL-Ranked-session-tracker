@@ -12,6 +12,7 @@ let overlayWindow;
 let riotApi;
 let sessionManager;
 let accountManager;
+let tryHardMode = false;
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -32,13 +33,14 @@ function createMainWindow() {
 }
 
 function createOverlayWindow() {
-  const config = require('./config.json');
+  // Cargar posición guardada o usar default
+  const savedPosition = store.get('overlayPosition', { x: 20, y: 100 });
   
   overlayWindow = new BrowserWindow({
-    width: 300,
-    height: 210,
-    x: config.overlayPosition.x,
-    y: config.overlayPosition.y,
+    width: 340,
+    height: 150,
+    x: savedPosition.x,
+    y: savedPosition.y,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
@@ -58,9 +60,13 @@ function createOverlayWindow() {
 }
 
 app.whenReady().then(() => {
+  // Cargar API key desde electron-store
+  const savedApiKey = store.get('riotApiKey');
+  const apiKey = savedApiKey || 'YOUR-API-KEY-HERE';
+  
   const config = require('./config.json');
   
-  riotApi = new RiotAPI(config.riotApiKey, config.region);
+  riotApi = new RiotAPI(apiKey, config.region);
   sessionManager = new SessionManager(riotApi);
   accountManager = new AccountManager(store);
   
@@ -161,6 +167,124 @@ ipcMain.handle('toggle-overlay', (event, visible) => {
 ipcMain.handle('get-obs-path', () => {
   const obsHtmlPath = path.join(__dirname, 'obs', 'overlay.html');
   return { path: obsHtmlPath };
+});
+
+ipcMain.handle('toggle-tryhard', (event, enabled) => {
+  tryHardMode = enabled;
+  console.log(`🔥 Modo Tryhard: ${enabled ? 'ACTIVADO' : 'DESACTIVADO'}`);
+  
+  // Actualizar overlay con el estado tryhard
+  updateOverlay();
+  
+  return { success: true };
+});
+
+ipcMain.handle('save-api-key', (event, apiKey) => {
+  try {
+    // Guardar en electron-store (persiste entre sesiones)
+    store.set('riotApiKey', apiKey);
+    
+    // Actualizar la instancia de RiotAPI
+    const config = require('./config.json');
+    riotApi = new RiotAPI(apiKey, config.region);
+    
+    console.log('✅ API Key guardada y actualizada');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error guardando API key:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('test-api-key', async () => {
+  try {
+    // Test simple: obtener status de la plataforma
+    const config = require('./config.json');
+    const url = `https://${config.region}.api.riotgames.com/lol/status/v4/platform-data`;
+    
+    const response = await require('axios').get(url, {
+      headers: { 'X-Riot-Token': riotApi.apiKey },
+      timeout: 10000
+    });
+    
+    if (response.status === 200) {
+      console.log('✅ API Key válida');
+      return { success: true };
+    }
+    
+    return { success: false, error: 'Respuesta inesperada' };
+  } catch (error) {
+    console.error('❌ API Key test falló:', error.message);
+    
+    if (error.response) {
+      switch (error.response.status) {
+        case 403:
+          return { success: false, error: 'API Key inválida o expirada' };
+        case 429:
+          return { success: false, error: 'Rate limit excedido' };
+        default:
+          return { success: false, error: `Error ${error.response.status}` };
+      }
+    }
+    
+    return { success: false, error: 'Error de red' };
+  }
+});
+
+ipcMain.handle('set-overlay-position', (event, { x, y }) => {
+  try {
+    if (!overlayWindow || overlayWindow.isDestroyed()) {
+      return { success: false, error: 'Overlay window no disponible' };
+    }
+    
+    overlayWindow.setBounds({
+      x: x,
+      y: y,
+      width: 340,
+      height: 150
+    });
+    
+    store.set('overlayPosition', { x, y });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error moviendo overlay:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-overlay-position', () => {
+  return store.get('overlayPosition', { x: 20, y: 100 });
+});
+
+ipcMain.handle('center-overlay', () => {
+  try {
+    if (!overlayWindow || overlayWindow.isDestroyed()) {
+      return { success: false };
+    }
+    
+    const { screen } = require('electron');
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+    
+    const x = Math.floor((width - 340) / 2);
+    const y = Math.floor((height - 150) / 2);
+    
+    overlayWindow.setBounds({
+      x: x,
+      y: y,
+      width: 340,
+      height: 150
+    });
+    
+    store.set('overlayPosition', { x, y });
+    
+    return { success: true, x, y };
+  } catch (error) {
+    console.error('Error centrando overlay:', error);
+    return { success: false };
+  }
 });
 
 // === TRACKING LOGIC ===
@@ -366,6 +490,9 @@ function getRankValue(tier, rank) {
 
 function updateOverlay() {
   const data = sessionManager.getSessionStats();
+  
+  // Añadir estado tryhard
+  data.tryHardMode = tryHardMode;
   
   // Actualizar ventana overlay de Electron
   if (overlayWindow && !overlayWindow.isDestroyed()) {

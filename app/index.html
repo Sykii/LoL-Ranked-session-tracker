@@ -13,6 +13,20 @@
       <p>Gestiona tus cuentas y trackea tus sesiones ranked</p>
     </header>
 
+    <section class="api-key-section">
+      <h2>🔑 Riot API Key</h2>
+      <div class="api-key-form">
+        <input type="password" id="apiKeyInput" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <button id="saveApiKeyBtn">Guardar Key</button>
+        <button id="testApiKeyBtn">Test</button>
+      </div>
+      <div class="api-key-status">
+        <span id="apiKeyStatus">❌ Sin configurar</span>
+        <span id="apiKeyExpiry"></span>
+      </div>
+      <p class="hint">Las Development Keys expiran cada 24h. Consigue una en <a href="https://developer.riotgames.com" target="_blank">developer.riotgames.com</a></p>
+    </section>
+
     <section class="add-account">
       <h2>Añadir Cuenta</h2>
       <div class="form-group">
@@ -36,6 +50,7 @@
       <div class="button-group">
         <button id="resetBtn" style="display:none;">Reset Sesión</button>
         <button id="toggleOverlayBtn" style="display:none;">Ocultar Overlay</button>
+        <button id="tryHardBtn" style="display:none;" class="tryhard-btn">🔥 Modo Tryhard</button>
       </div>
     </section>
 
@@ -52,6 +67,45 @@
         <button id="copyPathBtn">Copiar</button>
       </div>
       <p class="obs-note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
+    </section>
+
+    <section class="overlay-config" style="display:none;" id="overlayConfigSection">
+      <h2>🎯 Posición del Overlay</h2>
+      <p class="hint">Ajusta la posición del overlay en tu pantalla</p>
+      
+      <div class="position-controls">
+        <div class="position-group">
+          <label>Posición X (horizontal):</label>
+          <div class="position-input-group">
+            <input type="number" id="overlayX" min="0" max="3000" value="20">
+            <span class="position-unit">px</span>
+          </div>
+        </div>
+        
+        <div class="position-group">
+          <label>Posición Y (vertical):</label>
+          <div class="position-input-group">
+            <input type="number" id="overlayY" min="0" max="2000" value="100">
+            <span class="position-unit">px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="position-buttons">
+        <button id="applyPositionBtn">Aplicar Posición</button>
+        <button id="centerOverlayBtn">Centrar</button>
+        <button id="resetPositionBtn" class="secondary">Reset (20, 100)</button>
+      </div>
+
+      <div class="position-presets">
+        <p class="preset-label">Presets rápidos:</p>
+        <div class="preset-buttons">
+          <button class="preset-btn" data-x="20" data-y="20">↖ Arriba Izq</button>
+          <button class="preset-btn" data-x="1600" data-y="20">↗ Arriba Der</button>
+          <button class="preset-btn" data-x="20" data-y="900">↙ Abajo Izq</button>
+          <button class="preset-btn" data-x="1600" data-y="900">↘ Abajo Der</button>
+        </div>
+      </div>
     </section>
 
     <footer>

@@ -77,7 +77,8 @@ class SessionManager {
       sessionLosses: this.sessionLosses,
       sessionNetLP: this.sessionNetLP,
       sessionWinrate,
-      sessionStart: this.sessionStart
+      sessionStart: this.sessionStart,
+      tryHardMode: false // Se actualiza desde main.js
     };
   }
 }
