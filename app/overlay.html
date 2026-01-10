@@ -151,10 +151,11 @@
     }
 
     .rank-wr {
-      font-size: 10px;
+      font-size: 9px;
       color: #9ca3af;
       font-weight: 500;
-      line-height: 1;
+      line-height: 1.1;
+      white-space: nowrap;
     }
 
     .rank-net-lp {
@@ -242,18 +243,111 @@
     .stat-value.losses {
       color: #f87171;
     }
+
+    /* Modo MULTI */
+    .overlay-container.multi-mode {
+      border-color: rgba(147, 51, 234, 0.5);
+    }
+
+    .overlay-container.multi-mode .account-name {
+      color: #a78bfa;
+    }
+
+    /* Modo MULTI + TRYHARD (combinación épica) */
+    .overlay-container.tryhard.multi-mode {
+      background: linear-gradient(135deg, rgba(20, 0, 0, 0.95) 0%, rgba(30, 0, 30, 0.95) 100%);
+      border-color: rgba(220, 38, 38, 0.7);
+      box-shadow: 
+        0 10px 30px rgba(220, 38, 38, 0.4),
+        0 0 20px rgba(147, 51, 234, 0.3),
+        inset 0 0 40px rgba(220, 38, 38, 0.1);
+      animation: pulse-tryhard-multi 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-tryhard-multi {
+      0%, 100% {
+        box-shadow: 
+          0 10px 30px rgba(220, 38, 38, 0.4),
+          0 0 20px rgba(147, 51, 234, 0.3),
+          inset 0 0 40px rgba(220, 38, 38, 0.1);
+      }
+      50% {
+        box-shadow: 
+          0 10px 30px rgba(220, 38, 38, 0.6),
+          0 0 30px rgba(147, 51, 234, 0.5),
+          inset 0 0 50px rgba(220, 38, 38, 0.2);
+      }
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name {
+      background: linear-gradient(90deg, #dc2626, #a855f7, #dc2626);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shift 3s ease infinite;
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name::before {
+      content: "🔥 ";
+      -webkit-text-fill-color: initial;
+      background: none;
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name::after {
+      content: " !TRYHARD";
+      color: #dc2626;
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.8);
+      animation: blink-tryhard 1.5s ease-in-out infinite;
+      -webkit-text-fill-color: initial;
+      background: none;
+    }
+
+    .overlay-container.tryhard.multi-mode .rank-tier {
+      color: #f87171;
+      text-shadow: 
+        0 0 10px rgba(220, 38, 38, 0.8),
+        0 0 20px rgba(147, 51, 234, 0.6);
+      animation: glow-intense 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow-intense {
+      from {
+        text-shadow: 
+          0 0 10px rgba(220, 38, 38, 0.8),
+          0 0 20px rgba(147, 51, 234, 0.6);
+      }
+      to {
+        text-shadow: 
+          0 0 20px rgba(220, 38, 38, 1),
+          0 0 40px rgba(147, 51, 234, 0.8);
+      }
+    }
+
+    /* Transición entre cuentas */
+    .overlay-container.transitioning {
+      animation: fadeSlide 0.5s ease-in-out;
+    }
+
+    @keyframes fadeSlide {
+      0% { opacity: 1; transform: translateX(0); }
+      50% { opacity: 0; transform: translateX(-20px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
   </style>
 </head>
 <body>
   <div class="overlay-container">
-    <!-- ACCOUNT NAME -->
     <div class="account-header">
       <div class="account-name" id="accountName">No Account</div>
     </div>
     
-    <!-- MAIN CONTENT: 2 COLUMNAS -->
     <div class="main-content">
-      <!-- COLUMNA IZQUIERDA: RANK -->
       <div class="rank-section">
         <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
         
@@ -265,7 +359,6 @@
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: SESSION -->
       <div class="session-section">
         <div class="session-header">
           <div class="session-title">SESIÓN</div>
@@ -287,6 +380,8 @@
   </div>
 
   <script>
+    let lastAccountName = null;
+
     function getRankIcon(tier) {
       const tierMap = {
         'IRON': 'iron',
@@ -306,9 +401,33 @@
       return `../assets/ranks/${iconName}.png`;
     }
 
+    // Listener principal - USA window.api (Electron IPC)
     window.api.onUpdateOverlay((data) => {
-      // Aplicar modo tryhard
+      console.log('📡 Overlay recibió datos:', data);
+      
       const container = document.querySelector('.overlay-container');
+      const isMultiMode = data.mode === 'MULTI';
+      
+      // Detectar cambio de cuenta en MULTI mode para animación
+      if (isMultiMode && lastAccountName && lastAccountName !== data.accountName) {
+        console.log('🔄 Cambio de cuenta detectado:', lastAccountName, '→', data.accountName);
+        container.classList.add('transitioning');
+        setTimeout(() => {
+          container.classList.remove('transitioning');
+        }, 500);
+      }
+      
+      // Actualizar nombre actual
+      lastAccountName = isMultiMode ? data.accountName : null;
+      
+      // Aplicar clase para MULTI mode
+      if (isMultiMode) {
+        container.classList.add('multi-mode');
+      } else {
+        container.classList.remove('multi-mode');
+      }
+      
+      // Aplicar modo tryhard
       if (data.tryHardMode) {
         container.classList.add('tryhard');
       } else {
@@ -328,7 +447,14 @@
         : 'UNRANKED';
       document.getElementById('rankTier').textContent = rankText;
       document.getElementById('rankLP').textContent = `${data.lp} LP`;
-      document.getElementById('totalWR').textContent = `${data.totalWinrate}% WR`;
+      
+      // Total WR con W-L
+      const totalWins = data.totalWins || 0;
+      const totalLosses = data.totalLosses || 0;
+      const totalWRText = totalWins > 0 || totalLosses > 0 
+        ? `${data.totalWinrate}% WR (${totalWins}W-${totalLosses}L)`
+        : `${data.totalWinrate}% WR`;
+      document.getElementById('totalWR').textContent = totalWRText;
 
       // Net LP
       const netLPEl = document.getElementById('netLP');
@@ -340,8 +466,12 @@
       document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
 
       // Wins/Losses
-      document.getElementById('sessionWins').textContent = data.sessionWins;
-      document.getElementById('sessionLosses').textContent = data.sessionLosses;
+      document.getElementById('sessionWins').textContent = data.sessionWins || 0;
+      document.getElementById('sessionLosses').textContent = data.sessionLosses || 0;
+
+      // Asegurar visibilidad de secciones
+      document.querySelector('.session-section').style.display = 'flex';
+      netLPEl.style.display = 'block';
     });
   </script>
 </body>

@@ -5,6 +5,8 @@ const Store = require('electron-store');
 const RiotAPI = require('./src/riotApi');
 const SessionManager = require('./src/sessionManager');
 const AccountManager = require('./src/accountManager');
+const MultiModeManager = require('./src/multiModeManager');
+const MultiSessionManager = require('./src/multiSessionManager');
 
 const store = new Store();
 let mainWindow;
@@ -12,7 +14,14 @@ let overlayWindow;
 let riotApi;
 let sessionManager;
 let accountManager;
+let multiModeManager;
+let multiSessionManager;
 let tryHardMode = false;
+let currentMode = 'SINGLE'; // 'SINGLE' | 'MULTI'
+
+// Sistema de caché para MULTI mode
+let multiModeCache = new Map(); // key: puuid, value: { data, timestamp }
+const MULTI_CACHE_TTL = 90000; // 90 segundos (igual que el polling de SINGLE)
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -56,19 +65,44 @@ function createOverlayWindow() {
   overlayWindow.loadFile('app/overlay.html');
   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
   
-  // overlayWindow.webContents.openDevTools(); // Descomenta para debug
+  // Listener para cuando el overlay termine de cargar
+  overlayWindow.webContents.on('did-finish-load', () => {
+    console.log('✅ Overlay window cargado completamente');
+    
+    // Si hay una cuenta activa, enviar datos iniciales
+    const activeAccount = accountManager.getActiveAccount();
+    if (activeAccount && currentMode === 'SINGLE') {
+      console.log('   📤 Enviando datos iniciales al overlay');
+      updateOverlay();
+    }
+  });
+  
+  // Habilitar DevTools para debugging (descomenta para debug)
+  overlayWindow.webContents.openDevTools({ mode: 'detach' });
+  
+  console.log('🪟 Overlay window creado');
 }
 
 app.whenReady().then(() => {
   // Cargar API key desde electron-store
   const savedApiKey = store.get('riotApiKey');
+  console.log('🔑 API Key cargada del store:', savedApiKey ? `${savedApiKey.substring(0, 15)}... (${savedApiKey.length} chars)` : 'NO ENCONTRADA');
+  
   const apiKey = savedApiKey || 'YOUR-API-KEY-HERE';
   
   const config = require('./config.json');
   
+  console.log('🔧 Inicializando RiotAPI con:', {
+    apiKey: apiKey.substring(0, 15) + '...',
+    length: apiKey.length,
+    region: config.region
+  });
+  
   riotApi = new RiotAPI(apiKey, config.region);
   sessionManager = new SessionManager(riotApi);
   accountManager = new AccountManager(store);
+  multiModeManager = new MultiModeManager(accountManager, handleMultiModeEvent);
+  multiSessionManager = new MultiSessionManager();
   
   createMainWindow();
   createOverlayWindow();
@@ -181,12 +215,26 @@ ipcMain.handle('toggle-tryhard', (event, enabled) => {
 
 ipcMain.handle('save-api-key', (event, apiKey) => {
   try {
+    console.log('💾 Guardando API Key:', {
+      length: apiKey ? apiKey.length : 0,
+      preview: apiKey ? apiKey.substring(0, 15) + '...' : 'EMPTY',
+      hasTrim: apiKey !== apiKey.trim(),
+      isEmpty: !apiKey || apiKey.trim() === ''
+    });
+    
+    if (!apiKey || apiKey.trim() === '') {
+      console.error('❌ API Key vacía!');
+      return { success: false, error: 'API Key no puede estar vacía' };
+    }
+    
+    const cleanKey = apiKey.trim();
+    
     // Guardar en electron-store (persiste entre sesiones)
-    store.set('riotApiKey', apiKey);
+    store.set('riotApiKey', cleanKey);
     
     // Actualizar la instancia de RiotAPI
     const config = require('./config.json');
-    riotApi = new RiotAPI(apiKey, config.region);
+    riotApi = new RiotAPI(cleanKey, config.region);
     
     console.log('✅ API Key guardada y actualizada');
     
@@ -287,6 +335,31 @@ ipcMain.handle('center-overlay', () => {
   }
 });
 
+// === MULTI MODE IPC HANDLERS ===
+
+ipcMain.handle('toggle-mode', (event, mode) => {
+  if (mode === 'MULTI') {
+    switchToMultiMode();
+  } else {
+    switchToSingleMode();
+  }
+  
+  return { success: true, mode: currentMode };
+});
+
+ipcMain.handle('get-current-mode', () => {
+  return { mode: currentMode };
+});
+
+ipcMain.handle('set-multi-config', (event, config) => {
+  multiModeManager.setConfig(config);
+  return { success: true, config: multiModeManager.getConfig() };
+});
+
+ipcMain.handle('get-multi-config', () => {
+  return multiModeManager.getConfig();
+});
+
 // === TRACKING LOGIC ===
 
 let trackingInterval;
@@ -316,6 +389,11 @@ function stopTracking() {
 }
 
 async function updateRankedData(account) {
+  // No actualizar ranked data si estamos en MULTI mode
+  if (currentMode === 'MULTI') {
+    return;
+  }
+  
   try {
     const rankedData = await riotApi.getRankedData(account.puuid);
     
@@ -363,6 +441,11 @@ async function updateRankedData(account) {
 }
 
 async function checkForNewMatches(account) {
+  // No verificar partidas si estamos en MULTI mode
+  if (currentMode === 'MULTI') {
+    return;
+  }
+  
   try {
     const recentMatches = await riotApi.getRecentMatches(account.puuid, 5);
     
@@ -488,15 +571,214 @@ function getRankValue(tier, rank) {
   return (tiers[tier] || 0) * 10 + (ranks[rank] || 0);
 }
 
+// === MULTI MODE FUNCTIONS ===
+
+function handleMultiModeEvent(event) {
+  console.log('📡 Multi Mode Event:', event.type);
+  
+  switch (event.type) {
+    case 'TRANSITION_START':
+      // Notificar a overlay que viene transición
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('multi-transition-start', event);
+      }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('multi-transition-start', event);
+      }
+      break;
+      
+    case 'ACCOUNT_CHANGE':
+      // Actualizar overlay con nueva cuenta
+      updateOverlayMultiMode(event.account);
+      break;
+      
+    case 'CYCLE_COMPLETE':
+      // Volver a SINGLE mode
+      switchToSingleMode();
+      break;
+  }
+}
+
+async function updateOverlayMultiMode(account) {
+  try {
+    const accountName = `${account.gameName}#${account.tagLine}`;
+    
+    // Inicializar sesión si no existe
+    multiSessionManager.initSession(account.puuid, accountName);
+    
+    // Verificar caché
+    const cached = multiModeCache.get(account.puuid);
+    const now = Date.now();
+    let rankedData = null;
+    
+    if (cached && (now - cached.timestamp) < MULTI_CACHE_TTL) {
+      // Usar datos cacheados
+      rankedData = cached.data;
+      console.log(`💾 Cache HIT para ${accountName} (edad: ${Math.round((now - cached.timestamp) / 1000)}s)`);
+    } else {
+      // Hacer request a API y cachear
+      console.log(`🌐 Cache MISS para ${accountName} - consultando API...`);
+      rankedData = await riotApi.getRankedData(account.puuid);
+      
+      // Guardar en caché
+      multiModeCache.set(account.puuid, {
+        data: rankedData,
+        timestamp: now
+      });
+      
+      console.log(`💾 Datos cacheados para ${accountName} (válidos por ${MULTI_CACHE_TTL / 1000}s)`);
+    }
+    
+    // Actualizar ranked info en MultiSessionManager
+    if (rankedData && rankedData.length > 0) {
+      const soloQueue = rankedData.find(q => q.queueType === 'RANKED_SOLO_5x5');
+      
+      if (soloQueue) {
+        multiSessionManager.updateRankedInfo(account.puuid, {
+          tier: soloQueue.tier,
+          rank: soloQueue.rank,
+          lp: soloQueue.leaguePoints,
+          wins: soloQueue.wins,
+          losses: soloQueue.losses
+        });
+      } else {
+        multiSessionManager.updateRankedInfo(account.puuid, {
+          tier: 'UNRANKED',
+          rank: '',
+          lp: 0,
+          wins: 0,
+          losses: 0
+        });
+      }
+    }
+    
+    // Obtener stats de sesión desde MultiSessionManager
+    const sessionStats = multiSessionManager.getSessionStats(account.puuid, accountName);
+    
+    let accountData = {
+      accountName: accountName,
+      tier: sessionStats.tier,
+      rank: sessionStats.rank,
+      lp: sessionStats.lp,
+      totalWinrate: sessionStats.totalWinrate,
+      totalWins: sessionStats.totalWins,        // AÑADIDO
+      totalLosses: sessionStats.totalLosses,    // AÑADIDO
+      sessionWins: sessionStats.sessionWins,
+      sessionLosses: sessionStats.sessionLosses,
+      sessionNetLP: sessionStats.sessionNetLP,
+      sessionWinrate: sessionStats.sessionWinrate,
+      status: 'normal', // TODO: Detectar hotStreak, decay, etc
+      mode: 'MULTI',
+      tryHardMode: tryHardMode, // Añadir tryhard mode
+      multiInfo: {
+        currentIndex: multiModeManager.currentIndex,
+        totalAccounts: accountManager.getAllAccounts().length
+      }
+    };
+    
+    console.log('📡 updateOverlayMultiMode llamado:', {
+      account: accountData.accountName,
+      overlayExists: !!overlayWindow,
+      overlayDestroyed: overlayWindow ? overlayWindow.isDestroyed() : 'N/A'
+    });
+    
+    // Enviar a overlay
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+      try {
+        overlayWindow.webContents.send('update-overlay', accountData);
+        console.log('   ✅ Datos MULTI enviados al overlay de Electron');
+      } catch (error) {
+        console.error('   ❌ Error enviando datos MULTI al overlay:', error);
+      }
+    } else {
+      console.log('   ⚠️ Overlay window no disponible para MULTI');
+    }
+    
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update-multi-display', accountData);
+    }
+    
+    // Generar data.json para OBS (también en MULTI mode)
+    const obsDataPath = path.join(__dirname, 'obs', 'data.json');
+    try {
+      const obsDir = path.join(__dirname, 'obs');
+      if (!fs.existsSync(obsDir)) {
+        fs.mkdirSync(obsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(obsDataPath, JSON.stringify(accountData, null, 2));
+    } catch (error) {
+      console.error('Error escribiendo data.json en MULTI mode:', error);
+    }
+    
+  } catch (error) {
+    console.error('Error actualizando multi mode:', error.message);
+  }
+}
+
+function switchToMultiMode() {
+  if (currentMode === 'MULTI') return;
+  
+  console.log('🔄 Cambiando a MULTI MODE');
+  currentMode = 'MULTI';
+  
+  // Detener tracking de SINGLE mode
+  stopTracking();
+  
+  // Iniciar MULTI mode
+  const started = multiModeManager.start();
+  
+  if (!started) {
+    // Si falla, volver a SINGLE
+    switchToSingleMode();
+  }
+}
+
+function switchToSingleMode() {
+  if (currentMode === 'SINGLE') return;
+  
+  console.log('🔙 Volviendo a SINGLE MODE');
+  currentMode = 'SINGLE';
+  
+  // Detener MULTI mode
+  multiModeManager.stop();
+  
+  // Limpiar caché de MULTI mode
+  console.log(`🗑️ Limpiando caché de MULTI mode (${multiModeCache.size} entradas)`);
+  multiModeCache.clear();
+  
+  // Reactivar tracking de cuenta activa
+  const activeAccount = accountManager.getActiveAccount();
+  if (activeAccount) {
+    startTracking(activeAccount);
+  }
+}
+
 function updateOverlay() {
   const data = sessionManager.getSessionStats();
   
-  // Añadir estado tryhard
+  // Añadir estado tryhard y modo actual
   data.tryHardMode = tryHardMode;
+  data.mode = currentMode; // 'SINGLE' o 'MULTI'
+  
+  console.log('📡 updateOverlay llamado:', {
+    mode: data.mode,
+    account: data.accountName,
+    overlayExists: !!overlayWindow,
+    overlayDestroyed: overlayWindow ? overlayWindow.isDestroyed() : 'N/A',
+    overlayReady: overlayWindow && overlayWindow.webContents ? 'yes' : 'no'
+  });
   
   // Actualizar ventana overlay de Electron
   if (overlayWindow && !overlayWindow.isDestroyed()) {
-    overlayWindow.webContents.send('update-overlay', data);
+    try {
+      overlayWindow.webContents.send('update-overlay', data);
+      console.log('   ✅ Datos enviados al overlay de Electron');
+    } catch (error) {
+      console.error('   ❌ Error enviando datos al overlay:', error);
+    }
+  } else {
+    console.log('   ⚠️ Overlay window no disponible');
   }
   
   // Actualizar ventana principal
@@ -519,7 +801,10 @@ function updateOverlay() {
   }
 }
 
-// Actualizar overlay cada 5 segundos (para animaciones, etc)
+// Actualizar overlay cada 5 segundos (solo en modo SINGLE)
 setInterval(() => {
-  updateOverlay();
+  if (currentMode === 'SINGLE') {
+    updateOverlay();
+  }
+  // En modo MULTI, el multiModeManager gestiona las actualizaciones
 }, 5000);

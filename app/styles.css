@@ -362,3 +362,188 @@ footer {
   font-size: 12px;
   margin-top: 12px;
 }
+
+/* Mode Control Section */
+.mode-control {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.mode-indicator-wrapper {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.mode-indicator {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.mode-indicator.single {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.mode-indicator.multi {
+  background: rgba(147, 51, 234, 0.2);
+  color: #a78bfa;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  animation: pulse-multi 2s ease-in-out infinite;
+}
+
+@keyframes pulse-multi {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.mode-toggle-btn {
+  width: 100%;
+  background: #6366f1;
+  font-size: 15px;
+  padding: 14px;
+}
+
+.mode-toggle-btn:hover {
+  background: #4f46e5;
+}
+
+.mode-toggle-btn.multi-active {
+  background: #9333ea;
+}
+
+.mode-toggle-btn.multi-active:hover {
+  background: #7e22ce;
+}
+
+/* Multi Config Section */
+.multi-config {
+  background: rgba(147, 51, 234, 0.1);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+.config-group {
+  margin-bottom: 16px;
+}
+
+.config-group label {
+  display: block;
+  color: #d1d5db;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.config-group input[type="number"] {
+  width: 100%;
+}
+
+.config-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+#saveMultiConfigBtn {
+  width: 100%;
+  background: #9333ea;
+}
+
+#saveMultiConfigBtn:hover {
+  background: #7e22ce;
+}
+
+/* Multi Account Display */
+.multi-display {
+  margin-top: 20px;
+}
+
+.multi-account-card {
+  background: rgba(17, 24, 39, 0.8);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+}
+
+.multi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.account-counter {
+  font-size: 11px;
+  color: #a78bfa;
+  font-weight: 600;
+  background: rgba(147, 51, 234, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.account-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.rank-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tier {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.lp {
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 700;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.winrate {
+  font-size: 13px;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.status {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status.normal {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.status.promo {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.status.decay {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.status.inactive {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}

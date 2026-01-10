@@ -4,10 +4,17 @@
   "rank": "IV",
   "lp": 10,
   "totalWinrate": 55,
+  "totalWins": 6,
+  "totalLosses": 5,
   "sessionWins": 0,
   "sessionLosses": 0,
   "sessionNetLP": 0,
   "sessionWinrate": 0,
-  "sessionStart": 1768078687088,
-  "tryHardMode": false
+  "status": "normal",
+  "mode": "MULTI",
+  "tryHardMode": false,
+  "multiInfo": {
+    "currentIndex": 0,
+    "totalAccounts": 3
+  }
 }

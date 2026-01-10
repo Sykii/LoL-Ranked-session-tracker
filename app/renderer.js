@@ -2,12 +2,14 @@ const addBtn = document.getElementById('addBtn');
 const resetBtn = document.getElementById('resetBtn');
 const toggleOverlayBtn = document.getElementById('toggleOverlayBtn');
 const tryHardBtn = document.getElementById('tryHardBtn');
+const toggleModeBtn = document.getElementById('toggleModeBtn');
 const copyPathBtn = document.getElementById('copyPathBtn');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const testApiKeyBtn = document.getElementById('testApiKeyBtn');
 const applyPositionBtn = document.getElementById('applyPositionBtn');
 const centerOverlayBtn = document.getElementById('centerOverlayBtn');
 const resetPositionBtn = document.getElementById('resetPositionBtn');
+const saveMultiConfigBtn = document.getElementById('saveMultiConfigBtn');
 const apiKeyInput = document.getElementById('apiKeyInput');
 const apiKeyStatus = document.getElementById('apiKeyStatus');
 const apiKeyExpiry = document.getElementById('apiKeyExpiry');
@@ -17,10 +19,16 @@ const accountsList = document.getElementById('accountsList');
 const sessionData = document.getElementById('sessionData');
 const obsSection = document.getElementById('obsSection');
 const overlayConfigSection = document.getElementById('overlayConfigSection');
+const multiConfigSection = document.getElementById('multiConfigSection');
+const currentModeIndicator = document.getElementById('currentModeIndicator');
+const multiAccountDisplay = document.getElementById('multiAccountDisplay');
+const multiDurationInput = document.getElementById('multiDuration');
+const multiLoopCheckbox = document.getElementById('multiLoop');
 const obsPathInput = document.getElementById('obsPath');
 
 let overlayVisible = true;
 let tryHardMode = false;
+let currentMode = 'SINGLE';
 
 // Position Controls
 if (applyPositionBtn) {
@@ -216,6 +224,117 @@ tryHardBtn.addEventListener('click', async () => {
   }
 });
 
+// === MULTI MODE EVENT LISTENERS ===
+
+if (toggleModeBtn) {
+  toggleModeBtn.addEventListener('click', async () => {
+    const newMode = currentMode === 'SINGLE' ? 'MULTI' : 'SINGLE';
+    
+    toggleModeBtn.disabled = true;
+    toggleModeBtn.textContent = 'Cambiando...';
+    
+    const result = await window.api.toggleMode(newMode);
+    
+    if (result.success) {
+      currentMode = result.mode;
+      updateModeUI();
+    }
+    
+    toggleModeBtn.disabled = false;
+  });
+}
+
+if (saveMultiConfigBtn) {
+  saveMultiConfigBtn.addEventListener('click', async () => {
+    const config = {
+      displayDuration: parseInt(multiDurationInput.value) * 1000,
+      loopMode: multiLoopCheckbox.checked,
+      autoReturnToSingle: !multiLoopCheckbox.checked
+    };
+    
+    saveMultiConfigBtn.disabled = true;
+    saveMultiConfigBtn.textContent = 'Guardando...';
+    
+    const result = await window.api.setMultiConfig(config);
+    
+    if (result.success) {
+      saveMultiConfigBtn.textContent = '✓ Guardado';
+      setTimeout(() => {
+        saveMultiConfigBtn.textContent = 'Guardar Configuración';
+      }, 2000);
+    }
+    
+    saveMultiConfigBtn.disabled = false;
+  });
+}
+
+function updateModeUI() {
+  if (!toggleModeBtn || !currentModeIndicator) return;
+  
+  if (currentMode === 'MULTI') {
+    toggleModeBtn.textContent = '🔄 Modo: MULTI (Click para SINGLE)';
+    toggleModeBtn.classList.add('multi-active');
+    currentModeIndicator.textContent = '🔄 MULTI MODE ACTIVO';
+    currentModeIndicator.className = 'mode-indicator multi';
+    
+    if (multiConfigSection) {
+      multiConfigSection.style.display = 'block';
+    }
+  } else {
+    toggleModeBtn.textContent = '👤 Modo: SINGLE (Click para MULTI)';
+    toggleModeBtn.classList.remove('multi-active');
+    currentModeIndicator.textContent = '👤 SINGLE MODE';
+    currentModeIndicator.className = 'mode-indicator single';
+    
+    if (multiConfigSection) {
+      multiConfigSection.style.display = 'none';
+    }
+  }
+}
+
+function getStatusText(status) {
+  const texts = {
+    'normal': '✓ Normal',
+    'promo': '🔥 Hot Streak',
+    'decay': '⚠️ Decay',
+    'inactive': '💤 Inactiva'
+  };
+  return texts[status] || texts.normal;
+}
+
+// Listener para actualizaciones en modo MULTI
+window.api.onMultiDisplayUpdate((data) => {
+  if (currentMode !== 'MULTI') return;
+  
+  // Actualizar display con info de la cuenta actual
+  if (!multiAccountDisplay) return;
+  
+  multiAccountDisplay.innerHTML = `
+    <div class="multi-account-card">
+      <div class="multi-header">
+        <span class="account-counter">${data.multiInfo.currentIndex + 1}/${data.multiInfo.totalAccounts}</span>
+        <span class="account-name">${data.accountName}</span>
+      </div>
+      <div class="rank-info">
+        <span class="tier">${data.tier} ${data.rank}</span>
+        <span class="lp">${data.lp} LP</span>
+      </div>
+      <div class="stats">
+        <span class="winrate">${data.totalWinrate}% WR</span>
+        <span class="status ${data.status}">${getStatusText(data.status)}</span>
+      </div>
+    </div>
+  `;
+});
+
+// Listener para transiciones
+window.api.onMultiTransitionStart((data) => {
+  // Aquí NO hacemos animaciones, solo avisamos al usuario
+  console.log(`Transición: Cuenta ${data.currentIndex} → ${data.nextIndex}`);
+  
+  // El overlay.html manejará la animación CSS
+});
+
 // Load accounts
 async function loadAccounts() {
   const accounts = await window.api.getAccounts();
@@ -351,3 +470,18 @@ window.api.getSessionData().then(updateSessionDisplay);
 
 // Verificar API key al inicio
 testApiKey();
+
+// Cargar modo actual y configuración MULTI
+window.api.getCurrentMode().then(result => {
+  currentMode = result.mode;
+  updateModeUI();
+});
+
+window.api.getMultiConfig().then(config => {
+  if (multiDurationInput) {
+    multiDurationInput.value = config.displayDuration / 1000;
+  }
+  if (multiLoopCheckbox) {
+    multiLoopCheckbox.checked = config.loopMode;
+  }
+});

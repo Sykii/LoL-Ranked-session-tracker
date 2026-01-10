@@ -16,6 +16,17 @@ contextBridge.exposeInMainWorld('api', {
   getOverlayPosition: () => ipcRenderer.invoke('get-overlay-position'),
   centerOverlay: () => ipcRenderer.invoke('center-overlay'),
   
+  // Nuevos métodos para MULTI mode
+  toggleMode: (mode) => ipcRenderer.invoke('toggle-mode', mode),
+  getCurrentMode: () => ipcRenderer.invoke('get-current-mode'),
+  setMultiConfig: (config) => ipcRenderer.invoke('set-multi-config', config),
+  getMultiConfig: () => ipcRenderer.invoke('get-multi-config'),
+  
+  // Listeners existentes
   onUpdateOverlay: (callback) => ipcRenderer.on('update-overlay', (event, data) => callback(data)),
-  onUpdateSession: (callback) => ipcRenderer.on('update-session', (event, data) => callback(data))
+  onUpdateSession: (callback) => ipcRenderer.on('update-session', (event, data) => callback(data)),
+  
+  // Nuevos listeners para MULTI mode
+  onMultiTransitionStart: (callback) => ipcRenderer.on('multi-transition-start', (event, data) => callback(data)),
+  onMultiDisplayUpdate: (callback) => ipcRenderer.on('update-multi-display', (event, data) => callback(data))
 });

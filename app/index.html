@@ -54,6 +54,38 @@
       </div>
     </section>
 
+    <section class="mode-control">
+      <h2>🎯 Modo de Visualización</h2>
+      <div class="mode-indicator-wrapper">
+        <span id="currentModeIndicator" class="mode-indicator single">👤 SINGLE MODE</span>
+      </div>
+      <button id="toggleModeBtn" class="mode-toggle-btn">
+        👤 Modo: SINGLE (Click para MULTI)
+      </button>
+      <p class="hint">SINGLE: Una cuenta | MULTI: Rotar por todas las cuentas</p>
+    </section>
+
+    <section class="multi-config" style="display:none;" id="multiConfigSection">
+      <h2>⚙️ Configuración MULTI Mode</h2>
+      
+      <div class="config-group">
+        <label>Duración por cuenta (segundos):</label>
+        <input type="number" id="multiDuration" min="3" max="30" value="8">
+      </div>
+      
+      <div class="config-group">
+        <label>
+          <input type="checkbox" id="multiLoop" checked>
+          Loop continuo (si no, volver a SINGLE al terminar)
+        </label>
+      </div>
+      
+      <button id="saveMultiConfigBtn">Guardar Configuración</button>
+      
+      <!-- Display de cuenta actual en MULTI -->
+      <div id="multiAccountDisplay" class="multi-display"></div>
+    </section>
+
     <section class="obs-info" style="display:none;" id="obsSection">
       <h2>🎥 OBS Browser Source</h2>
       <p class="obs-instructions">Para usar en OBS Studio:</p>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LoL Session Overlay - OBS</title>
+  <title>Overlay</title>
   <style>
     * {
       margin: 0;
@@ -15,6 +15,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: transparent;
       overflow: hidden;
+      -webkit-app-region: drag;
     }
 
     .overlay-container {
@@ -150,10 +151,11 @@
     }
 
     .rank-wr {
-      font-size: 10px;
+      font-size: 9px;
       color: #9ca3af;
       font-weight: 500;
-      line-height: 1;
+      line-height: 1.1;
+      white-space: nowrap;
     }
 
     .rank-net-lp {
@@ -218,11 +220,6 @@
       transition: all 0.3s ease;
     }
 
-    .stat-box:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-    }
-
     .stat-label {
       font-size: 8px;
       text-transform: uppercase;
@@ -256,27 +253,105 @@
       50% { transform: scale(1.15); }
     }
 
-    .status-indicator {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #34d399;
-      animation: blink 2s ease infinite;
+    /* Modo MULTI */
+    .overlay-container.multi-mode {
+      border-color: rgba(147, 51, 234, 0.5);
     }
 
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    .overlay-container.multi-mode .account-name {
+      color: #a78bfa;
+    }
+
+    /* Modo MULTI + TRYHARD (combinación épica) */
+    .overlay-container.tryhard.multi-mode {
+      background: linear-gradient(135deg, rgba(20, 0, 0, 0.95) 0%, rgba(30, 0, 30, 0.95) 100%);
+      border-color: rgba(220, 38, 38, 0.7);
+      box-shadow: 
+        0 10px 30px rgba(220, 38, 38, 0.4),
+        0 0 20px rgba(147, 51, 234, 0.3),
+        inset 0 0 40px rgba(220, 38, 38, 0.1);
+      animation: pulse-tryhard-multi 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-tryhard-multi {
+      0%, 100% {
+        box-shadow: 
+          0 10px 30px rgba(220, 38, 38, 0.4),
+          0 0 20px rgba(147, 51, 234, 0.3),
+          inset 0 0 40px rgba(220, 38, 38, 0.1);
+      }
+      50% {
+        box-shadow: 
+          0 10px 30px rgba(220, 38, 38, 0.6),
+          0 0 30px rgba(147, 51, 234, 0.5),
+          inset 0 0 50px rgba(220, 38, 38, 0.2);
+      }
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name {
+      background: linear-gradient(90deg, #dc2626, #a855f7, #dc2626);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradient-shift 3s ease infinite;
+    }
+
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name::before {
+      content: "🔥 ";
+      -webkit-text-fill-color: initial;
+      background: none;
+    }
+
+    .overlay-container.tryhard.multi-mode .account-name::after {
+      content: " !TRYHARD";
+      color: #dc2626;
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(220, 38, 38, 0.8);
+      animation: blink-tryhard 1.5s ease-in-out infinite;
+      -webkit-text-fill-color: initial;
+      background: none;
+    }
+
+    .overlay-container.tryhard.multi-mode .rank-tier {
+      color: #f87171;
+      text-shadow: 
+        0 0 10px rgba(220, 38, 38, 0.8),
+        0 0 20px rgba(147, 51, 234, 0.6);
+      animation: glow-intense 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow-intense {
+      from {
+        text-shadow: 
+          0 0 10px rgba(220, 38, 38, 0.8),
+          0 0 20px rgba(147, 51, 234, 0.6);
+      }
+      to {
+        text-shadow: 
+          0 0 20px rgba(220, 38, 38, 1),
+          0 0 40px rgba(147, 51, 234, 0.8);
+      }
+    }
+
+    /* Transición entre cuentas */
+    .overlay-container.transitioning {
+      animation: fadeSlide 0.5s ease-in-out;
+    }
+
+    @keyframes fadeSlide {
+      0% { opacity: 1; transform: translateX(0); }
+      50% { opacity: 0; transform: translateX(-20px); }
+      100% { opacity: 1; transform: translateX(0); }
     }
   </style>
 </head>
 <body>
   <div class="overlay-container">
-    <div class="status-indicator"></div>
-    
     <!-- ACCOUNT NAME -->
     <div class="account-header">
       <div class="account-name" id="accountName">No Account</div>
@@ -319,6 +394,7 @@
 
   <script>
     let lastData = null;
+    let isAnimating = false; // Control de animación
 
     function getRankIcon(tier) {
       const tierMap = {
@@ -352,62 +428,111 @@
         // Detectar cambios para animar
         const winsChanged = lastData && lastData.sessionWins !== data.sessionWins;
         const lossesChanged = lastData && lastData.sessionLosses !== data.sessionLosses;
+        const accountChanged = lastData && lastData.accountName !== data.accountName;
 
-        // Aplicar modo tryhard
+        // Detectar modo
+        const isMultiMode = data.mode === 'MULTI';
+        
+        // Detectar cambio de cuenta en MULTI mode para animación
         const container = document.querySelector('.overlay-container');
+        
+        // Solo animar si cambió cuenta Y no está animando actualmente
+        if (isMultiMode && accountChanged && !isAnimating) {
+          console.log('🔄 Cambio de cuenta detectado:', lastData.accountName, '→', data.accountName);
+          
+          isAnimating = true;
+          container.classList.add('transitioning');
+          
+          // Actualizar DOM en el momento medio de la animación (cuando opacity es 0)
+          setTimeout(() => {
+            updateDOMElements(data, winsChanged, lossesChanged);
+            lastData = data; // Actualizar después de aplicar cambios
+          }, 250); // Mitad de 500ms
+          
+          setTimeout(() => {
+            container.classList.remove('transitioning');
+            isAnimating = false;
+          }, 500);
+        } else {
+          // Si no cambió cuenta O no es MULTI, actualizar inmediatamente
+          updateDOMElements(data, winsChanged, lossesChanged);
+          lastData = data;
+        }
+        
+        // Aplicar modo MULTI
+        if (isMultiMode) {
+          container.classList.add('multi-mode');
+        } else {
+          container.classList.remove('multi-mode');
+        }
+
+        // Aplicar modo tryhard (funciona en SINGLE y MULTI)
         if (data.tryHardMode) {
           container.classList.add('tryhard');
         } else {
           container.classList.remove('tryhard');
         }
-
-        // Actualizar nombre de cuenta
-        document.getElementById('accountName').textContent = data.accountName || 'No Account';
-
-        // Actualizar icono de rank
-        const rankIconEl = document.getElementById('rankIcon');
-        const newIcon = getRankIcon(data.tier);
-        if (rankIconEl.src !== newIcon) {
-          rankIconEl.src = newIcon;
-        }
-
-        // Actualizar rank info
-        const rankText = data.tier !== 'UNRANKED' 
-          ? `${data.tier} ${data.rank}` 
-          : 'UNRANKED';
-        document.getElementById('rankTier').textContent = rankText;
-        document.getElementById('rankLP').textContent = `${data.lp} LP`;
-        document.getElementById('totalWR').textContent = `${data.totalWinrate}% WR`;
-
-        // Net LP
-        const netLPEl = document.getElementById('netLP');
-        const netLP = data.sessionNetLP || 0;
-        netLPEl.textContent = `${netLP >= 0 ? '+' : ''}${netLP} LP`;
-        netLPEl.className = 'rank-net-lp ' + (netLP >= 0 ? 'positive' : 'negative');
-
-        // Session WR
-        document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
-
-        // Wins/Losses con animación
-        const winsEl = document.getElementById('sessionWins');
-        const lossesEl = document.getElementById('sessionLosses');
-        
-        winsEl.textContent = data.sessionWins;
-        lossesEl.textContent = data.sessionLosses;
-
-        if (winsChanged) {
-          winsEl.classList.add('updated');
-          setTimeout(() => winsEl.classList.remove('updated'), 500);
-        }
-        if (lossesChanged) {
-          lossesEl.classList.add('updated');
-          setTimeout(() => lossesEl.classList.remove('updated'), 500);
-        }
-
-        lastData = data;
       } catch (error) {
         console.error('Error actualizando overlay:', error);
       }
+    }
+
+    // Función separada para actualizar elementos del DOM
+    function updateDOMElements(data, winsChanged, lossesChanged) {
+      // Actualizar nombre de cuenta
+      document.getElementById('accountName').textContent = data.accountName || 'No Account';
+
+      // Actualizar icono de rank
+      const rankIconEl = document.getElementById('rankIcon');
+      const newIcon = getRankIcon(data.tier);
+      if (rankIconEl.src !== newIcon) {
+        rankIconEl.src = newIcon;
+      }
+
+      // Actualizar rank info
+      const rankText = data.tier !== 'UNRANKED' 
+        ? `${data.tier} ${data.rank}` 
+        : 'UNRANKED';
+      document.getElementById('rankTier').textContent = rankText;
+      document.getElementById('rankLP').textContent = `${data.lp} LP`;
+      
+      // Total WR con W-L
+      const totalWins = data.totalWins || 0;
+      const totalLosses = data.totalLosses || 0;
+      const totalWRText = totalWins > 0 || totalLosses > 0 
+        ? `${data.totalWinrate}% WR (${totalWins}W-${totalLosses}L)`
+        : `${data.totalWinrate}% WR`;
+      document.getElementById('totalWR').textContent = totalWRText;
+
+      // Net LP
+      const netLPEl = document.getElementById('netLP');
+      const netLP = data.sessionNetLP || 0;
+      netLPEl.textContent = `${netLP >= 0 ? '+' : ''}${netLP} LP`;
+      netLPEl.className = 'rank-net-lp ' + (netLP >= 0 ? 'positive' : 'negative');
+
+      // Session WR
+      document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
+
+      // Wins/Losses con animación
+      const winsEl = document.getElementById('sessionWins');
+      const lossesEl = document.getElementById('sessionLosses');
+      
+      winsEl.textContent = data.sessionWins || 0;
+      lossesEl.textContent = data.sessionLosses || 0;
+
+      if (winsChanged) {
+        winsEl.classList.add('updated');
+        setTimeout(() => winsEl.classList.remove('updated'), 500);
+      }
+      if (lossesChanged) {
+        lossesEl.classList.add('updated');
+        setTimeout(() => lossesEl.classList.remove('updated'), 500);
+      }
+
+      // Sesión siempre visible (en SINGLE y MULTI)
+      const sessionSection = document.querySelector('.session-section');
+      sessionSection.style.display = 'flex';
+      netLPEl.style.display = 'block';
     }
 
     // Actualizar cada 2 segundos

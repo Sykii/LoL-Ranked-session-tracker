@@ -73,6 +73,8 @@ class SessionManager {
       rank: this.rankedInfo.rank,
       lp: this.rankedInfo.lp,
       totalWinrate,
+      totalWins: this.rankedInfo.totalWins,      // NUEVO
+      totalLosses: this.rankedInfo.totalLosses,  // NUEVO
       sessionWins: this.sessionWins,
       sessionLosses: this.sessionLosses,
       sessionNetLP: this.sessionNetLP,
