@@ -25,8 +25,12 @@ const MULTI_CACHE_TTL = 90000; // 90 segundos (igual que el polling de SINGLE)
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 900,
+    height: 700,
+    minWidth: 800,
+    minHeight: 600,
+    frame: false, // Sin borde nativo
+    backgroundColor: '#1f2937',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -67,36 +71,22 @@ function createOverlayWindow() {
   
   // Listener para cuando el overlay termine de cargar
   overlayWindow.webContents.on('did-finish-load', () => {
-    console.log('✅ Overlay window cargado completamente');
-    
     // Si hay una cuenta activa, enviar datos iniciales
     const activeAccount = accountManager.getActiveAccount();
     if (activeAccount && currentMode === 'SINGLE') {
-      console.log('   📤 Enviando datos iniciales al overlay');
       updateOverlay();
     }
   });
   
-  // Habilitar DevTools para debugging (descomenta para debug)
-  overlayWindow.webContents.openDevTools({ mode: 'detach' });
-  
-  console.log('🪟 Overlay window creado');
+  // overlayWindow.webContents.openDevTools({ mode: 'detach' }); // Descomenta para debug
 }
 
 app.whenReady().then(() => {
   // Cargar API key desde electron-store
   const savedApiKey = store.get('riotApiKey');
-  console.log('🔑 API Key cargada del store:', savedApiKey ? `${savedApiKey.substring(0, 15)}... (${savedApiKey.length} chars)` : 'NO ENCONTRADA');
-  
   const apiKey = savedApiKey || 'YOUR-API-KEY-HERE';
   
   const config = require('./config.json');
-  
-  console.log('🔧 Inicializando RiotAPI con:', {
-    apiKey: apiKey.substring(0, 15) + '...',
-    length: apiKey.length,
-    region: config.region
-  });
   
   riotApi = new RiotAPI(apiKey, config.region);
   sessionManager = new SessionManager(riotApi);
@@ -213,17 +203,100 @@ ipcMain.handle('toggle-tryhard', (event, enabled) => {
   return { success: true };
 });
 
+// MULTI MODE HANDLERS
+ipcMain.handle('switch-to-multi-mode', () => {
+  try {
+    if (currentMode === 'MULTI') {
+      return { success: false, error: 'Ya estás en MULTI mode' };
+    }
+    
+    const allAccounts = accountManager.getAllAccounts();
+    if (allAccounts.length < 2) {
+      return { success: false, error: 'Necesitas al menos 2 cuentas para MULTI mode' };
+    }
+    
+    console.log('🔄 Cambiando a MULTI MODE');
+    currentMode = 'MULTI';
+    
+    // Detener tracking de SINGLE mode
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
+    
+    // Iniciar MULTI mode
+    multiModeManager.start();
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error al cambiar a MULTI mode:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('switch-to-single-mode', () => {
+  try {
+    if (currentMode === 'SINGLE') {
+      return { success: false, error: 'Ya estás en SINGLE mode' };
+    }
+    
+    console.log('🔙 Volviendo a SINGLE MODE');
+    currentMode = 'SINGLE';
+    
+    // Detener MULTI mode
+    multiModeManager.stop();
+    
+    // Reanudar tracking de la cuenta activa
+    const activeAccount = accountManager.getActiveAccount();
+    if (activeAccount) {
+      startTracking(activeAccount);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error al cambiar a SINGLE mode:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('set-multi-mode-interval', (event, interval) => {
+  try {
+    console.log('🔧 Handler set-multi-mode-interval llamado con:', interval);
+    
+    // Verificar que multiModeManager existe
+    if (!multiModeManager) {
+      console.error('❌ multiModeManager no está inicializado');
+      return { success: false, error: 'multiModeManager no está inicializado' };
+    }
+    
+    // Validar intervalo
+    if (interval < 3 || interval > 30) {
+      console.log('❌ Intervalo fuera de rango:', interval);
+      return { success: false, error: 'Intervalo debe estar entre 3 y 30 segundos' };
+    }
+    
+    console.log(`⏱️ Cambiando intervalo de MULTI mode a ${interval}s`);
+    
+    // Cambiar intervalo en multiModeManager usando setConfig
+    const newConfig = {
+      displayDuration: interval * 1000 // Convertir segundos a milisegundos
+    };
+    
+    console.log('📝 Nueva configuración:', newConfig);
+    multiModeManager.setConfig(newConfig);
+    
+    console.log('✅ Intervalo actualizado correctamente');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error al cambiar intervalo:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('save-api-key', (event, apiKey) => {
   try {
-    console.log('💾 Guardando API Key:', {
-      length: apiKey ? apiKey.length : 0,
-      preview: apiKey ? apiKey.substring(0, 15) + '...' : 'EMPTY',
-      hasTrim: apiKey !== apiKey.trim(),
-      isEmpty: !apiKey || apiKey.trim() === ''
-    });
-    
     if (!apiKey || apiKey.trim() === '') {
-      console.error('❌ API Key vacía!');
       return { success: false, error: 'API Key no puede estar vacía' };
     }
     
@@ -333,6 +406,33 @@ ipcMain.handle('center-overlay', () => {
     console.error('Error centrando overlay:', error);
     return { success: false };
   }
+});
+
+// WINDOW CONTROLS
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 // === MULTI MODE IPC HANDLERS ===
@@ -676,22 +776,9 @@ async function updateOverlayMultiMode(account) {
       }
     };
     
-    console.log('📡 updateOverlayMultiMode llamado:', {
-      account: accountData.accountName,
-      overlayExists: !!overlayWindow,
-      overlayDestroyed: overlayWindow ? overlayWindow.isDestroyed() : 'N/A'
-    });
-    
     // Enviar a overlay
     if (overlayWindow && !overlayWindow.isDestroyed()) {
-      try {
-        overlayWindow.webContents.send('update-overlay', accountData);
-        console.log('   ✅ Datos MULTI enviados al overlay de Electron');
-      } catch (error) {
-        console.error('   ❌ Error enviando datos MULTI al overlay:', error);
-      }
-    } else {
-      console.log('   ⚠️ Overlay window no disponible para MULTI');
+      overlayWindow.webContents.send('update-overlay', accountData);
     }
     
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -761,24 +848,9 @@ function updateOverlay() {
   data.tryHardMode = tryHardMode;
   data.mode = currentMode; // 'SINGLE' o 'MULTI'
   
-  console.log('📡 updateOverlay llamado:', {
-    mode: data.mode,
-    account: data.accountName,
-    overlayExists: !!overlayWindow,
-    overlayDestroyed: overlayWindow ? overlayWindow.isDestroyed() : 'N/A',
-    overlayReady: overlayWindow && overlayWindow.webContents ? 'yes' : 'no'
-  });
-  
   // Actualizar ventana overlay de Electron
   if (overlayWindow && !overlayWindow.isDestroyed()) {
-    try {
-      overlayWindow.webContents.send('update-overlay', data);
-      console.log('   ✅ Datos enviados al overlay de Electron');
-    } catch (error) {
-      console.error('   ❌ Error enviando datos al overlay:', error);
-    }
-  } else {
-    console.log('   ⚠️ Overlay window no disponible');
+    overlayWindow.webContents.send('update-overlay', data);
   }
   
   // Actualizar ventana principal

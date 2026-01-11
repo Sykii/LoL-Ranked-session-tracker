@@ -7,28 +7,60 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- CUSTOM TITLE BAR -->
+  <div class="titlebar">
+    <div class="titlebar-drag-region">
+      <div class="titlebar-icon">🎮</div>
+      <div class="titlebar-title">LoL Session Tracker</div>
+    </div>
+    <div class="window-controls">
+      <button class="window-control" id="minimizeBtn" title="Minimizar">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect y="5" width="12" height="2" fill="currentColor"/>
+        </svg>
+      </button>
+      <button class="window-control" id="maximizeBtn" title="Maximizar">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+      <button class="window-control close" id="closeBtn" title="Cerrar">
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <path d="M1 1 L11 11 M11 1 L1 11" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
   <div class="container">
     <header>
-      <h1>LoL Session Tracker</h1>
+      <h1>🎮 LoL Session Tracker</h1>
       <p>Gestiona tus cuentas y trackea tus sesiones ranked</p>
     </header>
 
-    <section class="api-key-section">
-      <h2>🔑 Riot API Key</h2>
-      <div class="api-key-form">
-        <input type="password" id="apiKeyInput" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-        <button id="saveApiKeyBtn">Guardar Key</button>
-        <button id="testApiKeyBtn">Test</button>
+    <!-- API KEY SECTION - COLAPSABLE -->
+    <section class="collapsible-section collapsed">
+      <div class="section-header" data-target="apiKeyContent">
+        <h2>🔑 Riot API Key</h2>
+        <span class="expand-icon">▼</span>
       </div>
-      <div class="api-key-status">
-        <span id="apiKeyStatus">❌ Sin configurar</span>
-        <span id="apiKeyExpiry"></span>
+      <div class="section-content" id="apiKeyContent">
+        <div class="api-key-form">
+          <input type="password" id="apiKeyInput" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          <button id="saveApiKeyBtn">Guardar Key</button>
+          <button id="testApiKeyBtn">Test</button>
+        </div>
+        <div class="api-key-status">
+          <span id="apiKeyStatus">❌ Sin configurar</span>
+          <span id="apiKeyExpiry"></span>
+        </div>
+        <p class="hint">Las Development Keys expiran cada 24h. Consigue una en <a href="https://developer.riotgames.com" target="_blank">developer.riotgames.com</a></p>
       </div>
-      <p class="hint">Las Development Keys expiran cada 24h. Consigue una en <a href="https://developer.riotgames.com" target="_blank">developer.riotgames.com</a></p>
     </section>
 
-    <section class="add-account">
-      <h2>Añadir Cuenta</h2>
+    <!-- ADD ACCOUNT SECTION - SIEMPRE VISIBLE -->
+    <section class="section-visible">
+      <h2>➕ Añadir Cuenta</h2>
       <div class="form-group">
         <input type="text" id="gameName" placeholder="Game Name (ej: Faker)">
         <input type="text" id="tagLine" placeholder="Tag (ej: KR1)">
@@ -37,105 +69,128 @@
       <p class="hint">Introduce el Riot ID completo (nombre#tag)</p>
     </section>
 
-    <section class="accounts">
-      <h2>Cuentas</h2>
+    <!-- ACCOUNTS LIST - SIEMPRE VISIBLE -->
+    <section class="section-visible">
+      <div class="section-title-with-button">
+        <h2>👥 Cuentas</h2>
+        <button id="toggleMultiModeBtn" class="multi-mode-btn" style="display:none;">🔄 Switch to MULTI Mode</button>
+      </div>
       <div id="accountsList"></div>
     </section>
 
-    <section class="session-stats">
-      <h2>Estadísticas de Sesión</h2>
-      <div id="sessionData">
-        <p>Selecciona una cuenta para ver estadísticas</p>
-      </div>
-      <div class="button-group">
-        <button id="resetBtn" style="display:none;">Reset Sesión</button>
-        <button id="toggleOverlayBtn" style="display:none;">Ocultar Overlay</button>
-        <button id="tryHardBtn" style="display:none;" class="tryhard-btn">🔥 Modo Tryhard</button>
-      </div>
-    </section>
-
-    <section class="mode-control">
-      <h2>🎯 Modo de Visualización</h2>
-      <div class="mode-indicator-wrapper">
-        <span id="currentModeIndicator" class="mode-indicator single">👤 SINGLE MODE</span>
-      </div>
-      <button id="toggleModeBtn" class="mode-toggle-btn">
-        👤 Modo: SINGLE (Click para MULTI)
-      </button>
-      <p class="hint">SINGLE: Una cuenta | MULTI: Rotar por todas las cuentas</p>
-    </section>
-
-    <section class="multi-config" style="display:none;" id="multiConfigSection">
+    <!-- MULTI MODE CONFIGURATION - VISIBLE SOLO EN MULTI MODE -->
+    <section class="section-visible" id="multiModeConfig" style="display:none;">
       <h2>⚙️ Configuración MULTI Mode</h2>
       
-      <div class="config-group">
-        <label>Duración por cuenta (segundos):</label>
-        <input type="number" id="multiDuration" min="3" max="30" value="8">
-      </div>
-      
-      <div class="config-group">
-        <label>
-          <input type="checkbox" id="multiLoop" checked>
-          Loop continuo (si no, volver a SINGLE al terminar)
-        </label>
-      </div>
-      
-      <button id="saveMultiConfigBtn">Guardar Configuración</button>
-      
-      <!-- Display de cuenta actual en MULTI -->
-      <div id="multiAccountDisplay" class="multi-display"></div>
-    </section>
-
-    <section class="obs-info" style="display:none;" id="obsSection">
-      <h2>🎥 OBS Browser Source</h2>
-      <p class="obs-instructions">Para usar en OBS Studio:</p>
-      <ol class="obs-steps">
-        <li>En OBS, añade una fuente <strong>"Navegador"</strong></li>
-        <li>Marca la casilla <strong>"Local file"</strong></li>
-        <li>Copia y pega esta ruta:</li>
-      </ol>
-      <div class="path-box">
-        <input type="text" id="obsPath" readonly>
-        <button id="copyPathBtn">Copiar</button>
-      </div>
-      <p class="obs-note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
-    </section>
-
-    <section class="overlay-config" style="display:none;" id="overlayConfigSection">
-      <h2>🎯 Posición del Overlay</h2>
-      <p class="hint">Ajusta la posición del overlay en tu pantalla</p>
-      
-      <div class="position-controls">
-        <div class="position-group">
-          <label>Posición X (horizontal):</label>
-          <div class="position-input-group">
-            <input type="number" id="overlayX" min="0" max="3000" value="20">
-            <span class="position-unit">px</span>
+      <div class="multi-config-grid">
+        <div class="config-item">
+          <label for="rotationInterval">⏱️ Intervalo de Rotación</label>
+          <div class="input-with-unit">
+            <input type="number" id="rotationInterval" min="3" max="30" value="8" step="1">
+            <span class="unit">segundos</span>
           </div>
+          <p class="config-hint">Tiempo que se muestra cada cuenta (3-30s)</p>
         </div>
+
+        <div class="config-item">
+          <label>📊 Cuentas en Rotación</label>
+          <div class="accounts-count">
+            <span id="multiAccountsCount">0</span> cuentas
+          </div>
+          <p class="config-hint">Todas tus cuentas están incluidas</p>
+        </div>
+      </div>
+
+      <div class="multi-config-actions">
+        <button id="applyMultiConfigBtn" class="primary-btn">💾 Aplicar Cambios</button>
+        <button id="resetMultiConfigBtn" class="secondary-btn">↺ Valores por Defecto</button>
+      </div>
+
+      <div class="multi-info-box">
+        <p><strong>💡 Consejo:</strong> En MULTI mode, cada cuenta mantiene su propia sesión desde que abriste la app.</p>
+      </div>
+    </section>
+
+    <!-- SESSION STATS - COLAPSABLE -->
+    <section class="collapsible-section collapsed">
+      <div class="section-header" data-target="sessionStatsContent">
+        <h2>📊 Estadísticas de Sesión</h2>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="section-content" id="sessionStatsContent">
+        <div id="sessionData">
+          <p>Selecciona una cuenta para ver estadísticas</p>
+        </div>
+        <div class="button-group">
+          <button id="resetBtn" style="display:none;">Reset Sesión</button>
+          <button id="toggleOverlayBtn" style="display:none;">Ocultar Overlay</button>
+          <button id="tryHardBtn" style="display:none;" class="tryhard-btn">🔥 Modo Tryhard</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- OBS BROWSER SOURCE - COLAPSABLE -->
+    <section class="collapsible-section collapsed" style="display:none;" id="obsSection">
+      <div class="section-header" data-target="obsContent">
+        <h2>🎥 OBS Browser Source</h2>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="section-content" id="obsContent">
+        <p class="obs-instructions">Para usar en OBS Studio:</p>
+        <ol class="obs-steps">
+          <li>En OBS, añade una fuente <strong>"Navegador"</strong></li>
+          <li>Marca la casilla <strong>"Local file"</strong></li>
+          <li>Copia y pega esta ruta:</li>
+        </ol>
+        <div class="path-box">
+          <input type="text" id="obsPath" readonly>
+          <button id="copyPathBtn">Copiar</button>
+        </div>
+        <p class="obs-note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
+      </div>
+    </section>
+
+    <!-- OVERLAY POSITION - COLAPSABLE -->
+    <section class="collapsible-section collapsed" style="display:none;" id="overlayConfigSection">
+      <div class="section-header" data-target="overlayConfigContent">
+        <h2>🎯 Posición del Overlay</h2>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="section-content" id="overlayConfigContent">
+        <p class="hint">Ajusta la posición del overlay en tu pantalla</p>
         
-        <div class="position-group">
-          <label>Posición Y (vertical):</label>
-          <div class="position-input-group">
-            <input type="number" id="overlayY" min="0" max="2000" value="100">
-            <span class="position-unit">px</span>
+        <div class="position-controls">
+          <div class="position-group">
+            <label>Posición X (horizontal):</label>
+            <div class="position-input-group">
+              <input type="number" id="overlayX" min="0" max="3000" value="20">
+              <span class="position-unit">px</span>
+            </div>
+          </div>
+          
+          <div class="position-group">
+            <label>Posición Y (vertical):</label>
+            <div class="position-input-group">
+              <input type="number" id="overlayY" min="0" max="2000" value="100">
+              <span class="position-unit">px</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="position-buttons">
-        <button id="applyPositionBtn">Aplicar Posición</button>
-        <button id="centerOverlayBtn">Centrar</button>
-        <button id="resetPositionBtn" class="secondary">Reset (20, 100)</button>
-      </div>
+        <div class="position-buttons">
+          <button id="applyPositionBtn">Aplicar Posición</button>
+          <button id="centerOverlayBtn">Centrar</button>
+          <button id="resetPositionBtn" class="secondary">Reset (20, 100)</button>
+        </div>
 
-      <div class="position-presets">
-        <p class="preset-label">Presets rápidos:</p>
-        <div class="preset-buttons">
-          <button class="preset-btn" data-x="20" data-y="20">↖ Arriba Izq</button>
-          <button class="preset-btn" data-x="1600" data-y="20">↗ Arriba Der</button>
-          <button class="preset-btn" data-x="20" data-y="900">↙ Abajo Izq</button>
-          <button class="preset-btn" data-x="1600" data-y="900">↘ Abajo Der</button>
+        <div class="position-presets">
+          <p class="preset-label">Presets rápidos:</p>
+          <div class="preset-buttons">
+            <button class="preset-btn" data-x="20" data-y="20">↖ Arriba Izq</button>
+            <button class="preset-btn" data-x="1600" data-y="20">↗ Arriba Der</button>
+            <button class="preset-btn" data-x="20" data-y="900">↙ Abajo Izq</button>
+            <button class="preset-btn" data-x="1600" data-y="900">↘ Abajo Der</button>
+          </div>
         </div>
       </div>
     </section>

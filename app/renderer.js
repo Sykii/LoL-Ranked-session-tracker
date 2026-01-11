@@ -1,15 +1,80 @@
+// COLLAPSIBLE SECTIONS FUNCTIONALITY
+document.addEventListener('DOMContentLoaded', () => {
+  const sectionHeaders = document.querySelectorAll('.section-header');
+  
+  sectionHeaders.forEach(header => {
+    header.addEventListener('click', () => {
+      const section = header.parentElement;
+      section.classList.toggle('collapsed');
+    });
+  });
+});
+
+// WINDOW CONTROLS
+const minimizeBtn = document.getElementById('minimizeBtn');
+const maximizeBtn = document.getElementById('maximizeBtn');
+const closeBtn = document.getElementById('closeBtn');
+
+if (minimizeBtn) {
+  minimizeBtn.addEventListener('click', () => {
+    window.api.minimizeWindow();
+  });
+}
+
+if (maximizeBtn) {
+  maximizeBtn.addEventListener('click', async () => {
+    await window.api.maximizeWindow();
+    updateMaximizeButton();
+  });
+}
+
+if (closeBtn) {
+  closeBtn.addEventListener('click', () => {
+    window.api.closeWindow();
+  });
+}
+
+// Actualizar icono de maximizar/restaurar
+async function updateMaximizeButton() {
+  const isMaximized = await window.api.isMaximized();
+  
+  if (maximizeBtn) {
+    if (isMaximized) {
+      // Icono de restaurar
+      maximizeBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect x="2" y="2" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="2" y="1" width="8" height="1.5" fill="currentColor"/>
+        </svg>
+      `;
+      maximizeBtn.title = 'Restaurar';
+    } else {
+      // Icono de maximizar
+      maximizeBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 12 12">
+          <rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      `;
+      maximizeBtn.title = 'Maximizar';
+    }
+  }
+}
+
+// Actualizar al cargar
+updateMaximizeButton();
+
+// ELEMENT REFERENCES
 const addBtn = document.getElementById('addBtn');
 const resetBtn = document.getElementById('resetBtn');
 const toggleOverlayBtn = document.getElementById('toggleOverlayBtn');
 const tryHardBtn = document.getElementById('tryHardBtn');
-const toggleModeBtn = document.getElementById('toggleModeBtn');
+const toggleMultiModeBtn = document.getElementById('toggleMultiModeBtn');
 const copyPathBtn = document.getElementById('copyPathBtn');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
 const testApiKeyBtn = document.getElementById('testApiKeyBtn');
 const applyPositionBtn = document.getElementById('applyPositionBtn');
 const centerOverlayBtn = document.getElementById('centerOverlayBtn');
 const resetPositionBtn = document.getElementById('resetPositionBtn');
-const saveMultiConfigBtn = document.getElementById('saveMultiConfigBtn');
 const apiKeyInput = document.getElementById('apiKeyInput');
 const apiKeyStatus = document.getElementById('apiKeyStatus');
 const apiKeyExpiry = document.getElementById('apiKeyExpiry');
@@ -19,16 +84,17 @@ const accountsList = document.getElementById('accountsList');
 const sessionData = document.getElementById('sessionData');
 const obsSection = document.getElementById('obsSection');
 const overlayConfigSection = document.getElementById('overlayConfigSection');
-const multiConfigSection = document.getElementById('multiConfigSection');
-const currentModeIndicator = document.getElementById('currentModeIndicator');
-const multiAccountDisplay = document.getElementById('multiAccountDisplay');
-const multiDurationInput = document.getElementById('multiDuration');
-const multiLoopCheckbox = document.getElementById('multiLoop');
 const obsPathInput = document.getElementById('obsPath');
+
+// MULTI MODE CONFIG ELEMENTS
+const multiModeConfig = document.getElementById('multiModeConfig');
+const rotationIntervalInput = document.getElementById('rotationInterval');
+const multiAccountsCount = document.getElementById('multiAccountsCount');
+const applyMultiConfigBtn = document.getElementById('applyMultiConfigBtn');
+const resetMultiConfigBtn = document.getElementById('resetMultiConfigBtn');
 
 let overlayVisible = true;
 let tryHardMode = false;
-let currentMode = 'SINGLE';
 
 // Position Controls
 if (applyPositionBtn) {
@@ -224,124 +290,21 @@ tryHardBtn.addEventListener('click', async () => {
   }
 });
 
-// === MULTI MODE EVENT LISTENERS ===
-
-if (toggleModeBtn) {
-  toggleModeBtn.addEventListener('click', async () => {
-    const newMode = currentMode === 'SINGLE' ? 'MULTI' : 'SINGLE';
-    
-    toggleModeBtn.disabled = true;
-    toggleModeBtn.textContent = 'Cambiando...';
-    
-    const result = await window.api.toggleMode(newMode);
-    
-    if (result.success) {
-      currentMode = result.mode;
-      updateModeUI();
-    }
-    
-    toggleModeBtn.disabled = false;
-  });
-}
-
-if (saveMultiConfigBtn) {
-  saveMultiConfigBtn.addEventListener('click', async () => {
-    const config = {
-      displayDuration: parseInt(multiDurationInput.value) * 1000,
-      loopMode: multiLoopCheckbox.checked,
-      autoReturnToSingle: !multiLoopCheckbox.checked
-    };
-    
-    saveMultiConfigBtn.disabled = true;
-    saveMultiConfigBtn.textContent = 'Guardando...';
-    
-    const result = await window.api.setMultiConfig(config);
-    
-    if (result.success) {
-      saveMultiConfigBtn.textContent = '✓ Guardado';
-      setTimeout(() => {
-        saveMultiConfigBtn.textContent = 'Guardar Configuración';
-      }, 2000);
-    }
-    
-    saveMultiConfigBtn.disabled = false;
-  });
-}
-
-function updateModeUI() {
-  if (!toggleModeBtn || !currentModeIndicator) return;
-  
-  if (currentMode === 'MULTI') {
-    toggleModeBtn.textContent = '🔄 Modo: MULTI (Click para SINGLE)';
-    toggleModeBtn.classList.add('multi-active');
-    currentModeIndicator.textContent = '🔄 MULTI MODE ACTIVO';
-    currentModeIndicator.className = 'mode-indicator multi';
-    
-    if (multiConfigSection) {
-      multiConfigSection.style.display = 'block';
-    }
-  } else {
-    toggleModeBtn.textContent = '👤 Modo: SINGLE (Click para MULTI)';
-    toggleModeBtn.classList.remove('multi-active');
-    currentModeIndicator.textContent = '👤 SINGLE MODE';
-    currentModeIndicator.className = 'mode-indicator single';
-    
-    if (multiConfigSection) {
-      multiConfigSection.style.display = 'none';
-    }
-  }
-}
-
-function getStatusText(status) {
-  const texts = {
-    'normal': '✓ Normal',
-    'promo': '🔥 Hot Streak',
-    'decay': '⚠️ Decay',
-    'inactive': '💤 Inactiva'
-  };
-  return texts[status] || texts.normal;
-}
-
-// Listener para actualizaciones en modo MULTI
-window.api.onMultiDisplayUpdate((data) => {
-  if (currentMode !== 'MULTI') return;
-  
-  // Actualizar display con info de la cuenta actual
-  if (!multiAccountDisplay) return;
-  
-  multiAccountDisplay.innerHTML = `
-    <div class="multi-account-card">
-      <div class="multi-header">
-        <span class="account-counter">${data.multiInfo.currentIndex + 1}/${data.multiInfo.totalAccounts}</span>
-        <span class="account-name">${data.accountName}</span>
-      </div>
-      <div class="rank-info">
-        <span class="tier">${data.tier} ${data.rank}</span>
-        <span class="lp">${data.lp} LP</span>
-      </div>
-      <div class="stats">
-        <span class="winrate">${data.totalWinrate}% WR</span>
-        <span class="status ${data.status}">${getStatusText(data.status)}</span>
-      </div>
-    </div>
-  `;
-});
-
-// Listener para transiciones
-window.api.onMultiTransitionStart((data) => {
-  // Aquí NO hacemos animaciones, solo avisamos al usuario
-  console.log(`Transición: Cuenta ${data.currentIndex} → ${data.nextIndex}`);
-  
-  // El overlay.html manejará la animación CSS
-});
-
 // Load accounts
 async function loadAccounts() {
   const accounts = await window.api.getAccounts();
   
   if (accounts.length === 0) {
     accountsList.innerHTML = '<p style="color:#6b7280;">No hay cuentas añadidas</p>';
+    toggleMultiModeBtn.style.display = 'none'; // Ocultar botón si no hay cuentas
     return;
+  }
+
+  // Mostrar botón de MULTI mode solo si hay 2+ cuentas
+  if (accounts.length >= 2 && toggleMultiModeBtn) {
+    toggleMultiModeBtn.style.display = 'block';
+  } else if (toggleMultiModeBtn) {
+    toggleMultiModeBtn.style.display = 'none';
   }
 
   // Limpiar completamente antes de volver a crear
@@ -464,24 +427,110 @@ window.api.onUpdateSession((data) => {
   updateSessionDisplay(data);
 });
 
+// MULTI MODE TOGGLE
+let isMultiMode = false;
+
+if (toggleMultiModeBtn) {
+  toggleMultiModeBtn.addEventListener('click', async () => {
+    if (!isMultiMode) {
+      // Switch to MULTI mode
+      const result = await window.api.switchToMultiMode();
+      if (result.success) {
+        isMultiMode = true;
+        toggleMultiModeBtn.textContent = '⏸️ Switch to SINGLE Mode';
+        toggleMultiModeBtn.classList.add('active');
+        
+        // Mostrar panel de configuración de MULTI
+        if (multiModeConfig) {
+          multiModeConfig.style.display = 'block';
+          updateMultiAccountsCount();
+        }
+        
+        console.log('✅ MULTI mode activado');
+      }
+    } else {
+      // Switch to SINGLE mode
+      const result = await window.api.switchToSingleMode();
+      if (result.success) {
+        isMultiMode = false;
+        toggleMultiModeBtn.textContent = '🔄 Switch to MULTI Mode';
+        toggleMultiModeBtn.classList.remove('active');
+        
+        // Ocultar panel de configuración de MULTI
+        if (multiModeConfig) {
+          multiModeConfig.style.display = 'none';
+        }
+        
+        console.log('✅ SINGLE mode activado');
+      }
+    }
+  });
+}
+
+// MULTI MODE CONFIG HANDLERS
+async function updateMultiAccountsCount() {
+  const accounts = await window.api.getAccounts();
+  if (multiAccountsCount) {
+    multiAccountsCount.textContent = accounts.length;
+  }
+}
+
+if (applyMultiConfigBtn) {
+  applyMultiConfigBtn.addEventListener('click', async () => {
+    const interval = parseInt(rotationIntervalInput.value) || 8;
+    
+    console.log('🔧 Aplicando intervalo:', interval);
+    
+    // Validar rango
+    if (interval < 3 || interval > 30) {
+      alert('El intervalo debe estar entre 3 y 30 segundos');
+      return;
+    }
+    
+    applyMultiConfigBtn.disabled = true;
+    applyMultiConfigBtn.textContent = '⏳ Aplicando...';
+    
+    try {
+      console.log('📡 Llamando a window.api.setMultiModeInterval...');
+      const result = await window.api.setMultiModeInterval(interval);
+      console.log('📥 Respuesta recibida:', result);
+      
+      if (result && result.success) {
+        applyMultiConfigBtn.textContent = '✓ Aplicado';
+        console.log('✅ Intervalo aplicado correctamente');
+        setTimeout(() => {
+          applyMultiConfigBtn.textContent = '💾 Aplicar Cambios';
+          applyMultiConfigBtn.disabled = false;
+        }, 2000);
+      } else {
+        applyMultiConfigBtn.textContent = '❌ Error';
+        console.error('❌ Error en la respuesta:', result);
+        setTimeout(() => {
+          applyMultiConfigBtn.textContent = '💾 Aplicar Cambios';
+          applyMultiConfigBtn.disabled = false;
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('❌ Error al aplicar intervalo:', error);
+      applyMultiConfigBtn.textContent = '❌ Error';
+      setTimeout(() => {
+        applyMultiConfigBtn.textContent = '💾 Aplicar Cambios';
+        applyMultiConfigBtn.disabled = false;
+      }, 2000);
+    }
+  });
+}
+
+if (resetMultiConfigBtn) {
+  resetMultiConfigBtn.addEventListener('click', () => {
+    rotationIntervalInput.value = 8;
+    console.log('✅ Configuración reseteada a valores por defecto');
+  });
+}
+
 // Initial load
 loadAccounts();
 window.api.getSessionData().then(updateSessionDisplay);
 
 // Verificar API key al inicio
 testApiKey();
-
-// Cargar modo actual y configuración MULTI
-window.api.getCurrentMode().then(result => {
-  currentMode = result.mode;
-  updateModeUI();
-});
-
-window.api.getMultiConfig().then(config => {
-  if (multiDurationInput) {
-    multiDurationInput.value = config.displayDuration / 1000;
-  }
-  if (multiLoopCheckbox) {
-    multiLoopCheckbox.checked = config.loopMode;
-  }
-});

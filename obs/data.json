@@ -10,11 +10,7 @@
   "sessionLosses": 0,
   "sessionNetLP": 0,
   "sessionWinrate": 0,
-  "status": "normal",
-  "mode": "MULTI",
+  "sessionStart": 1768134488824,
   "tryHardMode": false,
-  "multiInfo": {
-    "currentIndex": 0,
-    "totalAccounts": 3
-  }
+  "mode": "SINGLE"
 }

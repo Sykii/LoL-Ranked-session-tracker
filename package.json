@@ -1,7 +1,7 @@
 {
   "name": "lol-session-tracker",
-  "version": "1.0.0",
-  "description": "League of Legends ranked session tracker with overlay",
+  "version": "3.0.0",
+  "description": "League of Legends ranked session tracker with Discord-style interface and overlay",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

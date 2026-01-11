@@ -386,13 +386,13 @@ overlayWindow.webContents.openDevTools({ mode: 'detach' });
 
 ## 📝 Changelog
 
-### v3.0.0 (Latest) - UI Redesign 🎨
+### v3.0.0 (Latest) - Discord-Style UI Redesign 🎨
 - ✅ **Frameless window** with custom title bar
 - ✅ **Integrated window controls** (minimize, maximize, close)
 - ✅ **Draggable title bar** for window movement
 - ✅ **Collapsible sections** for better organization
 - ✅ **MULTI mode configuration panel** with adjustable rotation speed
-- ✅ **Modern dark theme**
+- ✅ **Modern dark theme** inspired by Discord
 - ✅ **Improved layout** with better space utilization
 - ✅ **Enhanced visual polish** throughout the app
 
@@ -483,7 +483,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🐛 **Bug Reports**: [Open an issue](https://github.com/yourusername/lol-session-tracker/issues)
 - 💡 **Feature Requests**: [Open an issue](https://github.com/yourusername/lol-session-tracker/issues)
-- 📧 **Contact**: arturoxcs@gmail.com
+- 📧 **Contact**: your.email@example.com
 
 ---
 
