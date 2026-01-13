@@ -34,97 +34,98 @@
 
   <div class="container">
     <header>
-      <h1>🎮 LoL Session Tracker</h1>
-      <p>Gestiona tus cuentas y trackea tus sesiones ranked</p>
+      <h1 data-i18n="app.title">🎮 LoL Session Tracker</h1>
+      <p data-i18n="app.subtitle">Gestiona tus cuentas y trackea tus sesiones ranked</p>
     </header>
 
     <!-- API KEY SECTION - COLAPSABLE -->
     <section class="collapsible-section collapsed">
       <div class="section-header" data-target="apiKeyContent">
-        <h2>🔑 Riot API Key</h2>
+        <h2 data-i18n="sections.apiKey.title">🔑 Riot API Key</h2>
         <span class="expand-icon">▼</span>
       </div>
       <div class="section-content" id="apiKeyContent">
         <div class="api-key-form">
-          <input type="password" id="apiKeyInput" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-          <button id="saveApiKeyBtn">Guardar Key</button>
-          <button id="testApiKeyBtn">Test</button>
+          <input type="password" id="apiKeyInput" data-i18n-placeholder="sections.apiKey.placeholder" placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          <button id="saveApiKeyBtn" data-i18n="sections.apiKey.save">Guardar Key</button>
+          <button id="testApiKeyBtn" data-i18n="sections.apiKey.test">Test</button>
         </div>
         <div class="api-key-status">
-          <span id="apiKeyStatus">❌ Sin configurar</span>
+          <span id="apiKeyStatus" data-i18n="sections.apiKey.notConfigured">❌ Sin configurar</span>
           <span id="apiKeyExpiry"></span>
         </div>
-        <p class="hint">Las Development Keys expiran cada 24h. Consigue una en <a href="https://developer.riotgames.com" target="_blank">developer.riotgames.com</a></p>
+        <p class="hint"><span data-i18n="sections.apiKey.instructions">Las Development Keys expiran cada 24h. Consigue una en</span> <a href="https://developer.riotgames.com" target="_blank" data-i18n="sections.apiKey.link">developer.riotgames.com</a></p>
       </div>
     </section>
 
     <!-- ADD ACCOUNT SECTION - SIEMPRE VISIBLE -->
     <section class="section-visible">
-      <h2>➕ Añadir Cuenta</h2>
+      <h2 data-i18n="sections.addAccount.title">➕ Añadir Cuenta</h2>
       <div class="form-group">
-        <input type="text" id="gameName" placeholder="Game Name (ej: Faker)">
-        <input type="text" id="tagLine" placeholder="Tag (ej: KR1)">
-        <button id="addBtn">Añadir</button>
+        <input type="text" id="gameName" data-i18n-placeholder="sections.addAccount.gameNamePlaceholder" placeholder="Game Name (ej: Faker)">
+        <input type="text" id="tagLine" data-i18n-placeholder="sections.addAccount.tagLinePlaceholder" placeholder="Tag (ej: KR1)">
+        <button id="addBtn" data-i18n="sections.addAccount.add">Añadir</button>
       </div>
-      <p class="hint">Introduce el Riot ID completo (nombre#tag)</p>
+      <p class="hint" data-i18n="sections.addAccount.example">Introduce el Riot ID completo (nombre#tag)</p>
     </section>
 
     <!-- ACCOUNTS LIST - SIEMPRE VISIBLE -->
     <section class="section-visible">
       <div class="section-title-with-button">
-        <h2>👥 Cuentas</h2>
-        <button id="toggleMultiModeBtn" class="multi-mode-btn" style="display:none;">🔄 Switch to MULTI Mode</button>
+        <h2 data-i18n="sections.accounts.title">👥 Cuentas</h2>
+        <button id="toggleMultiModeBtn" class="multi-mode-btn" data-i18n="sections.accounts.multiMode" style="display:none;">🔄 Switch to MULTI Mode</button>
       </div>
       <div id="accountsList"></div>
     </section>
 
     <!-- MULTI MODE CONFIGURATION - VISIBLE SOLO EN MULTI MODE -->
     <section class="section-visible" id="multiModeConfig" style="display:none;">
-      <h2>⚙️ Configuración MULTI Mode</h2>
+      <h2 data-i18n="sections.multiConfig.title">⚙️ Configuración MULTI Mode</h2>
       
       <div class="multi-config-grid">
         <div class="config-item">
-          <label for="rotationInterval">⏱️ Intervalo de Rotación</label>
+          <label for="rotationInterval" data-i18n="sections.multiConfig.interval">⏱️ Intervalo de Rotación</label>
           <div class="input-with-unit">
             <input type="number" id="rotationInterval" min="3" max="30" value="8" step="1">
-            <span class="unit">segundos</span>
+            <span class="unit" data-i18n="sections.multiConfig.intervalUnit">segundos</span>
           </div>
-          <p class="config-hint">Tiempo que se muestra cada cuenta (3-30s)</p>
+          <p class="config-hint" data-i18n="sections.multiConfig.intervalHint">Tiempo que se muestra cada cuenta (3-30s)</p>
         </div>
 
         <div class="config-item">
-          <label>📊 Cuentas en Rotación</label>
+          <label data-i18n="sections.multiConfig.accountsCount">📊 Cuentas en Rotación</label>
           <div class="accounts-count">
-            <span id="multiAccountsCount">0</span> cuentas
+            <span id="multiAccountsCount">0</span> <span data-i18n="sections.multiConfig.accountsUnit">cuentas</span>
           </div>
-          <p class="config-hint">Todas tus cuentas están incluidas</p>
+          <p class="config-hint" data-i18n="sections.multiConfig.accountsHint">Todas tus cuentas están incluidas</p>
         </div>
       </div>
 
       <div class="multi-config-actions">
-        <button id="applyMultiConfigBtn" class="primary-btn">💾 Aplicar Cambios</button>
-        <button id="resetMultiConfigBtn" class="secondary-btn">↺ Valores por Defecto</button>
+        <button id="applyMultiConfigBtn" class="primary-btn" data-i18n="sections.multiConfig.apply">💾 Aplicar Cambios</button>
+        <button id="resetMultiConfigBtn" class="secondary-btn" data-i18n="sections.multiConfig.reset">↺ Valores por Defecto</button>
       </div>
 
       <div class="multi-info-box">
-        <p><strong>💡 Consejo:</strong> En MULTI mode, cada cuenta mantiene su propia sesión desde que abriste la app.</p>
+        <p><strong data-i18n="sections.multiConfig.tip">💡 Consejo:</strong> <span data-i18n="sections.multiConfig.tipText">En MULTI mode, cada cuenta mantiene su propia sesión desde que abriste la app.</span></p>
       </div>
     </section>
 
     <!-- SESSION STATS - COLAPSABLE -->
     <section class="collapsible-section collapsed">
       <div class="section-header" data-target="sessionStatsContent">
-        <h2>📊 Estadísticas de Sesión</h2>
+        <h2 data-i18n="sections.sessionStats.title">📊 Estadísticas de Sesión</h2>
         <span class="expand-icon">▼</span>
       </div>
       <div class="section-content" id="sessionStatsContent">
         <div id="sessionData">
-          <p>Selecciona una cuenta para ver estadísticas</p>
+          <p data-i18n="sections.sessionStats.noData">Selecciona una cuenta para ver estadísticas</p>
         </div>
         <div class="button-group">
-          <button id="resetBtn" style="display:none;">Reset Sesión</button>
-          <button id="toggleOverlayBtn" style="display:none;">Ocultar Overlay</button>
-          <button id="tryHardBtn" style="display:none;" class="tryhard-btn">🔥 Modo Tryhard</button>
+          <button id="resetBtn" data-i18n="sections.sessionStats.reset" style="display:none;">Reset Sesión</button>
+          <button id="toggleOverlayBtn" data-i18n="sections.overlayPosition.hide" style="display:none;">Ocultar Overlay</button>
+          <button id="tryHardBtn" data-i18n="sections.sessionStats.tryhard_off" style="display:none;" class="tryhard-btn">🔥 Modo Tryhard</button>
+          <button id="toggleSpotifyBtn" data-i18n="sections.sessionStats.spotify_off" style="display:none;" class="spotify-btn">🎵 Mostrar Spotify</button>
         </div>
       </div>
     </section>
@@ -132,36 +133,36 @@
     <!-- OBS BROWSER SOURCE - COLAPSABLE -->
     <section class="collapsible-section collapsed" style="display:none;" id="obsSection">
       <div class="section-header" data-target="obsContent">
-        <h2>🎥 OBS Browser Source</h2>
+        <h2 data-i18n="sections.obs.title">🎥 OBS Browser Source</h2>
         <span class="expand-icon">▼</span>
       </div>
       <div class="section-content" id="obsContent">
-        <p class="obs-instructions">Para usar en OBS Studio:</p>
+        <p class="obs-instructions" data-i18n="sections.obs.description">Para usar en OBS Studio:</p>
         <ol class="obs-steps">
-          <li>En OBS, añade una fuente <strong>"Navegador"</strong></li>
-          <li>Marca la casilla <strong>"Local file"</strong></li>
-          <li>Copia y pega esta ruta:</li>
+          <li data-i18n="sections.obs.step1">En OBS, añade una fuente <strong>"Navegador"</strong></li>
+          <li data-i18n="sections.obs.step2">Marca la casilla <strong>"Local file"</strong></li>
+          <li data-i18n="sections.obs.step3">Copia y pega esta ruta:</li>
         </ol>
         <div class="path-box">
           <input type="text" id="obsPath" readonly>
-          <button id="copyPathBtn">Copiar</button>
+          <button id="copyPathBtn" data-i18n="sections.obs.copy">Copiar</button>
         </div>
-        <p class="obs-note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
+        <p class="obs-note" data-i18n="sections.obs.note">💡 El overlay se actualiza automáticamente cada 2 segundos</p>
       </div>
     </section>
 
     <!-- OVERLAY POSITION - COLAPSABLE -->
     <section class="collapsible-section collapsed" style="display:none;" id="overlayConfigSection">
       <div class="section-header" data-target="overlayConfigContent">
-        <h2>🎯 Posición del Overlay</h2>
+        <h2 data-i18n="sections.overlayPosition.title">🎯 Posición del Overlay</h2>
         <span class="expand-icon">▼</span>
       </div>
       <div class="section-content" id="overlayConfigContent">
-        <p class="hint">Ajusta la posición del overlay en tu pantalla</p>
+        <p class="hint" data-i18n="sections.overlayPosition.hint">Ajusta la posición del overlay en tu pantalla</p>
         
         <div class="position-controls">
           <div class="position-group">
-            <label>Posición X (horizontal):</label>
+            <label data-i18n="sections.overlayPosition.x">Posición X (horizontal):</label>
             <div class="position-input-group">
               <input type="number" id="overlayX" min="0" max="3000" value="20">
               <span class="position-unit">px</span>
@@ -169,7 +170,7 @@
           </div>
           
           <div class="position-group">
-            <label>Posición Y (vertical):</label>
+            <label data-i18n="sections.overlayPosition.y">Posición Y (vertical):</label>
             <div class="position-input-group">
               <input type="number" id="overlayY" min="0" max="2000" value="100">
               <span class="position-unit">px</span>
@@ -178,25 +179,42 @@
         </div>
 
         <div class="position-buttons">
-          <button id="applyPositionBtn">Aplicar Posición</button>
-          <button id="centerOverlayBtn">Centrar</button>
-          <button id="resetPositionBtn" class="secondary">Reset (20, 100)</button>
+          <button id="applyPositionBtn" data-i18n="sections.overlayPosition.apply">Aplicar Posición</button>
+          <button id="centerOverlayBtn" data-i18n="sections.overlayPosition.center">Centrar</button>
+          <button id="resetPositionBtn" class="secondary" data-i18n="sections.overlayPosition.reset">Reset (20, 100)</button>
         </div>
 
         <div class="position-presets">
-          <p class="preset-label">Presets rápidos:</p>
+          <p class="preset-label" data-i18n="sections.overlayPosition.presets">Presets rápidos:</p>
           <div class="preset-buttons">
-            <button class="preset-btn" data-x="20" data-y="20">↖ Arriba Izq</button>
-            <button class="preset-btn" data-x="1600" data-y="20">↗ Arriba Der</button>
-            <button class="preset-btn" data-x="20" data-y="900">↙ Abajo Izq</button>
-            <button class="preset-btn" data-x="1600" data-y="900">↘ Abajo Der</button>
+            <button class="preset-btn" data-x="20" data-y="20" data-i18n="sections.overlayPosition.topLeft">↖ Arriba Izq</button>
+            <button class="preset-btn" data-x="1600" data-y="20" data-i18n="sections.overlayPosition.topRight">↗ Arriba Der</button>
+            <button class="preset-btn" data-x="20" data-y="900" data-i18n="sections.overlayPosition.bottomLeft">↙ Abajo Izq</button>
+            <button class="preset-btn" data-x="1600" data-y="900" data-i18n="sections.overlayPosition.bottomRight">↘ Abajo Der</button>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- SETTINGS - Configuración -->
+    <section class="collapsible-section collapsed">
+      <div class="section-header" data-target="settingsSection">
+        <h2 data-i18n="sections.settings.title">⚙️ Configuración</h2>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="section-content" id="settingsSection">
+        <div class="settings-group">
+          <label for="languageSelect" data-i18n="sections.settings.language">🌐 Idioma</label>
+          <select id="languageSelect" class="language-select">
+            <option value="es">🇪🇸 Español</option>
+            <option value="en">🇬🇧 English</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
     <footer>
-      <p>Los datos se actualizan cada 90 segundos | Riot API Rate Limit: 20/s</p>
+      <p data-i18n="footer">Los datos se actualizan cada 90 segundos | Riot API Rate Limit: 20/s</p>
     </footer>
   </div>
 

@@ -1,0 +1,150 @@
+{
+  "app": {
+    "title": "LoL Session Tracker",
+    "subtitle": "Manage your accounts and track your ranked sessions",
+    "version": "3.0.0"
+  },
+  "titlebar": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
+    "close": "Close"
+  },
+  "sections": {
+    "apiKey": {
+      "title": "🔑 Riot API Key",
+      "placeholder": "Paste your API Key here",
+      "save": "💾 Save API Key",
+      "test": "🧪 Test API Key",
+      "status": "Status:",
+      "notConfigured": "Not configured",
+      "valid": "✅ Valid",
+      "invalid": "❌ Invalid",
+      "expiry": "Expires in 24 hours",
+      "instructions": "Get your API key at",
+      "link": "Riot Developer Portal"
+    },
+    "addAccount": {
+      "title": "➕ Add Account",
+      "gameName": "Summoner Name",
+      "gameNamePlaceholder": "e.g: Faker",
+      "tagLine": "Tag",
+      "tagLinePlaceholder": "e.g: KR1",
+      "add": "➕ Add Account",
+      "example": "Example: Faker#KR1"
+    },
+    "accounts": {
+      "title": "👥 Accounts",
+      "noAccounts": "No accounts added",
+      "active": "Active",
+      "setActive": "🎯 Set Active",
+      "remove": "🗑️ Remove",
+      "multiMode": "🔄 Switch to MULTI Mode",
+      "singleMode": "⏸️ Switch to SINGLE Mode"
+    },
+    "multiConfig": {
+      "title": "⚙️ MULTI Mode Configuration",
+      "interval": "⏱️ Rotation Interval",
+      "intervalUnit": "seconds",
+      "intervalHint": "Time each account is displayed (3-30s)",
+      "accountsCount": "📊 Accounts in Rotation",
+      "accountsUnit": "accounts",
+      "accountsHint": "All your accounts are included",
+      "apply": "💾 Apply Changes",
+      "applying": "⏳ Applying...",
+      "applied": "✓ Applied",
+      "error": "❌ Error",
+      "reset": "↺ Reset to Defaults",
+      "tip": "💡 Tip:",
+      "tipText": "In MULTI mode, each account maintains its own session from when you opened the app."
+    },
+    "sessionStats": {
+      "title": "📊 Session Statistics",
+      "loading": "Loading statistics...",
+      "noData": "Select an account to view statistics",
+      "wins": "Wins",
+      "losses": "Losses",
+      "netLP": "Net LP",
+      "winrate": "Winrate",
+      "tryhard": "🔥 Tryhard Mode",
+      "tryhard_on": "🔥 Disable Tryhard",
+      "tryhard_off": "🔥 Enable Tryhard",
+      "reset": "Reset Session",
+      "spotify_on": "🎵 Hide Spotify",
+      "spotify_off": "🎵 Show Spotify"
+    },
+    "obs": {
+      "title": "🎥 OBS Browser Source",
+      "description": "To use in OBS Studio:",
+      "step1": "In OBS, add a \"Browser\" source",
+      "step2": "Check \"Local file\"",
+      "step3": "Copy and paste this path:",
+      "width": "Width: 340px",
+      "height": "Height: 150px",
+      "copy": "Copy",
+      "copied": "✓ Copied",
+      "note": "💡 The overlay updates automatically every 2 seconds"
+    },
+    "overlayPosition": {
+      "title": "🎯 Overlay Position",
+      "hint": "Adjust the overlay position on your screen",
+      "x": "X Position (horizontal):",
+      "y": "Y Position (vertical):",
+      "apply": "Apply Position",
+      "center": "Center",
+      "reset": "Reset (20, 100)",
+      "show": "👁️ Show Overlay",
+      "hide": "🙈 Hide Overlay",
+      "presets": "Quick presets:",
+      "topLeft": "↖ Top Left",
+      "topRight": "↗ Top Right",
+      "bottomLeft": "↙ Bottom Left",
+      "bottomRight": "↘ Bottom Right"
+    },
+    "settings": {
+      "title": "⚙️ Settings",
+      "language": "🌐 Language",
+      "selectLanguage": "Select language"
+    }
+  },
+  "overlay": {
+    "loading": "Loading...",
+    "wins": "W",
+    "losses": "L",
+    "session": "SESSION",
+    "lp": "LP",
+    "wr": "WR"
+  },
+  "messages": {
+    "accountAdded": "✅ Account added successfully",
+    "accountRemoved": "✅ Account removed",
+    "accountActivated": "✅ Account activated",
+    "apiKeySaved": "✅ API Key saved",
+    "apiKeyValid": "✅ API Key is valid",
+    "apiKeyInvalid": "❌ API Key is invalid",
+    "errorAddingAccount": "❌ Error adding account",
+    "errorRemovingAccount": "❌ Error removing account",
+    "errorSavingApiKey": "❌ Error saving API Key",
+    "fillAllFields": "⚠️ Please fill all fields",
+    "intervalOutOfRange": "⚠️ Interval must be between 3 and 30 seconds",
+    "needTwoAccounts": "⚠️ You need at least 2 accounts for MULTI mode"
+  },
+  "ranks": {
+    "IRON": "IRON",
+    "BRONZE": "BRONZE",
+    "SILVER": "SILVER",
+    "GOLD": "GOLD",
+    "PLATINUM": "PLATINUM",
+    "EMERALD": "EMERALD",
+    "DIAMOND": "DIAMOND",
+    "MASTER": "MASTER",
+    "GRANDMASTER": "GRANDMASTER",
+    "CHALLENGER": "CHALLENGER"
+  },
+  "divisions": {
+    "I": "I",
+    "II": "II",
+    "III": "III",
+    "IV": "IV"
+  }
+}

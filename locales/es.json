@@ -1,0 +1,150 @@
+{
+  "app": {
+    "title": "LoL Session Tracker",
+    "subtitle": "Gestiona tus cuentas y trackea tus sesiones ranked",
+    "version": "3.0.0"
+  },
+  "titlebar": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "restore": "Restaurar",
+    "close": "Cerrar"
+  },
+  "sections": {
+    "apiKey": {
+      "title": "🔑 Riot API Key",
+      "placeholder": "Pega tu API Key aquí",
+      "save": "💾 Guardar API Key",
+      "test": "🧪 Probar API Key",
+      "status": "Estado:",
+      "notConfigured": "No configurada",
+      "valid": "✅ Válida",
+      "invalid": "❌ Inválida",
+      "expiry": "Expira en 24 horas",
+      "instructions": "Obtén tu API key en",
+      "link": "Riot Developer Portal"
+    },
+    "addAccount": {
+      "title": "➕ Añadir Cuenta",
+      "gameName": "Nombre de Invocador",
+      "gameNamePlaceholder": "Ej: Faker",
+      "tagLine": "Tag",
+      "tagLinePlaceholder": "Ej: KR1",
+      "add": "➕ Añadir Cuenta",
+      "example": "Ejemplo: Faker#KR1"
+    },
+    "accounts": {
+      "title": "👥 Cuentas",
+      "noAccounts": "No hay cuentas añadidas",
+      "active": "Activa",
+      "setActive": "🎯 Activar",
+      "remove": "🗑️ Eliminar",
+      "multiMode": "🔄 Cambiar a MULTI Mode",
+      "singleMode": "⏸️ Cambiar a SINGLE Mode"
+    },
+    "multiConfig": {
+      "title": "⚙️ Configuración MULTI Mode",
+      "interval": "⏱️ Intervalo de Rotación",
+      "intervalUnit": "segundos",
+      "intervalHint": "Tiempo que se muestra cada cuenta (3-30s)",
+      "accountsCount": "📊 Cuentas en Rotación",
+      "accountsUnit": "cuentas",
+      "accountsHint": "Todas tus cuentas están incluidas",
+      "apply": "💾 Aplicar Cambios",
+      "applying": "⏳ Aplicando...",
+      "applied": "✓ Aplicado",
+      "error": "❌ Error",
+      "reset": "↺ Valores por Defecto",
+      "tip": "💡 Consejo:",
+      "tipText": "En MULTI mode, cada cuenta mantiene su propia sesión desde que abriste la app."
+    },
+    "sessionStats": {
+      "title": "📊 Estadísticas de Sesión",
+      "loading": "Cargando estadísticas...",
+      "noData": "Selecciona una cuenta para ver estadísticas",
+      "wins": "Victorias",
+      "losses": "Derrotas",
+      "netLP": "LP Neto",
+      "winrate": "Winrate",
+      "tryhard": "🔥 Modo Tryhard",
+      "tryhard_on": "🔥 Desactivar Tryhard",
+      "tryhard_off": "🔥 Activar Tryhard",
+      "reset": "Reset Sesión",
+      "spotify_on": "🎵 Ocultar Spotify",
+      "spotify_off": "🎵 Mostrar Spotify"
+    },
+    "obs": {
+      "title": "🎥 OBS Browser Source",
+      "description": "Para usar en OBS Studio:",
+      "step1": "En OBS, añade una fuente \"Navegador\"",
+      "step2": "Marca la casilla \"Local file\"",
+      "step3": "Copia y pega esta ruta:",
+      "width": "Ancho: 340px",
+      "height": "Alto: 150px",
+      "copy": "Copiar",
+      "copied": "✓ Copiado",
+      "note": "💡 El overlay se actualiza automáticamente cada 2 segundos"
+    },
+    "overlayPosition": {
+      "title": "🎯 Posición del Overlay",
+      "hint": "Ajusta la posición del overlay en tu pantalla",
+      "x": "Posición X (horizontal):",
+      "y": "Posición Y (vertical):",
+      "apply": "Aplicar Posición",
+      "center": "Centrar",
+      "reset": "Reset (20, 100)",
+      "show": "👁️ Mostrar Overlay",
+      "hide": "🙈 Ocultar Overlay",
+      "presets": "Presets rápidos:",
+      "topLeft": "↖ Arriba Izq",
+      "topRight": "↗ Arriba Der",
+      "bottomLeft": "↙ Abajo Izq",
+      "bottomRight": "↘ Abajo Der"
+    },
+    "settings": {
+      "title": "⚙️ Configuración",
+      "language": "🌐 Idioma",
+      "selectLanguage": "Seleccionar idioma"
+    }
+  },
+  "overlay": {
+    "loading": "Cargando...",
+    "wins": "V",
+    "losses": "D",
+    "session": "SESIÓN",
+    "lp": "LP",
+    "wr": "WR"
+  },
+  "messages": {
+    "accountAdded": "✅ Cuenta añadida exitosamente",
+    "accountRemoved": "✅ Cuenta eliminada",
+    "accountActivated": "✅ Cuenta activada",
+    "apiKeySaved": "✅ API Key guardada",
+    "apiKeyValid": "✅ API Key válida",
+    "apiKeyInvalid": "❌ API Key inválida",
+    "errorAddingAccount": "❌ Error al añadir cuenta",
+    "errorRemovingAccount": "❌ Error al eliminar cuenta",
+    "errorSavingApiKey": "❌ Error al guardar API Key",
+    "fillAllFields": "⚠️ Por favor completa todos los campos",
+    "intervalOutOfRange": "⚠️ El intervalo debe estar entre 3 y 30 segundos",
+    "needTwoAccounts": "⚠️ Necesitas al menos 2 cuentas para MULTI mode"
+  },
+  "ranks": {
+    "IRON": "HIERRO",
+    "BRONZE": "BRONCE",
+    "SILVER": "PLATA",
+    "GOLD": "ORO",
+    "PLATINUM": "PLATINO",
+    "EMERALD": "ESMERALDA",
+    "DIAMOND": "DIAMANTE",
+    "MASTER": "MAESTRO",
+    "GRANDMASTER": "GRAN MAESTRO",
+    "CHALLENGER": "RETADOR"
+  },
+  "divisions": {
+    "I": "I",
+    "II": "II",
+    "III": "III",
+    "IV": "IV"
+  }
+}

@@ -102,6 +102,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      position: relative; /* Para que Spotify se posicione relativo a esta sección */
     }
 
     .rank-icon {
@@ -331,13 +332,78 @@
 
     /* Transición entre cuentas */
     .overlay-container.transitioning {
-      animation: fadeSlide 0.5s ease-in-out !important;
+      animation: fadeSlide 0.5s ease-in-out;
     }
 
     @keyframes fadeSlide {
       0% { opacity: 1; transform: translateX(0); }
       50% { opacity: 0; transform: translateX(-20px); }
       100% { opacity: 1; transform: translateX(0); }
+    }
+    /* ============================================
+       SPOTIFY INTEGRATION
+       ============================================ */
+    
+    /* SPOTIFY CURRENT TRACK (posicionado absolutamente debajo del logo) */
+    .spotify-track {
+      position: absolute;
+      left: 0;
+      top: 68px;
+      width: 130px;
+      height: 16px;
+      overflow: hidden;
+      display: none;
+      padding: 0;
+      line-height: 16px;
+    }
+    
+    .spotify-track.visible {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .spotify-track-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    
+    .spotify-track-text {
+      font-size: 12px; /* Aumentado de 11px a 12px */
+      color: #1db954;
+      font-weight: 700; /* Bold - aumentado de 600 a 700 */
+      white-space: nowrap;
+      display: inline-block;
+      animation: scroll-text 20s linear infinite;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+    
+    @keyframes scroll-text {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    
+    .spotify-icon {
+      color: #1db954;
+      font-size: 12px; /* Aumentado de 11px a 12px */
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    
+    .overlay-container.tryhard .spotify-track-text {
+      color: #1db954;
+    }
+    
+    .overlay-container.tryhard .spotify-icon {
+      color: #1db954;
     }
   </style>
 </head>
@@ -350,6 +416,14 @@
     <div class="main-content">
       <div class="rank-section">
         <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
+        
+        <!-- SPOTIFY CURRENT TRACK (debajo del logo) -->
+        <div class="spotify-track" id="spotifyTrack">
+          <span class="spotify-icon">🎵</span>
+          <div class="spotify-track-container">
+            <span class="spotify-track-text" id="spotifyText"></span>
+          </div>
+        </div>
         
         <div class="rank-info">
           <div class="rank-tier" id="rankTier">UNRANKED</div>
@@ -472,6 +546,27 @@
       // Asegurar visibilidad de secciones
       document.querySelector('.session-section').style.display = 'flex';
       netLPEl.style.display = 'block';
+    });
+
+    // Escuchar actualizaciones de Spotify
+    window.api.onUpdateSpotify((track) => {
+      const spotifyTrack = document.getElementById('spotifyTrack');
+      const spotifyText = document.getElementById('spotifyText');
+      
+      if (!spotifyTrack || !spotifyText) return;
+      
+      if (track) {
+        spotifyText.textContent = track;
+        spotifyTrack.classList.add('visible');
+        
+        // Reiniciar animación
+        spotifyText.style.animation = 'none';
+        setTimeout(() => {
+          spotifyText.style.animation = 'scroll-text 20s linear infinite';
+        }, 10);
+      } else {
+        spotifyTrack.classList.remove('visible');
+      }
     });
   </script>
 </body>

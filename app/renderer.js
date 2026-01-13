@@ -1,3 +1,94 @@
+// I18N SYSTEM
+let translations = {};
+let currentLocale = 'es';
+
+// Función para traducir
+function t(key) {
+  const keys = key.split('.');
+  let value = translations;
+  
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k];
+    } else {
+      return key; // Fallback a la key si no existe
+    }
+  }
+  
+  return value;
+}
+
+// Aplicar traducciones al DOM
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(element => {
+    const key = element.getAttribute('data-i18n');
+    const translation = t(key);
+    
+    // Para el contenido de texto
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+      // Para inputs, no cambiar el textContent, solo placeholder si existe
+    } else if (element.tagName === 'BUTTON') {
+      element.textContent = translation;
+    } else if (element.tagName === 'OPTION') {
+      // No traducir options del select de idioma
+      if (element.parentElement.id !== 'languageSelect') {
+        element.textContent = translation;
+      }
+    } else {
+      // Para otros elementos (p, span, label, h2, etc.)
+      element.textContent = translation;
+    }
+  });
+  
+  // Aplicar placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+    const key = element.getAttribute('data-i18n-placeholder');
+    const translation = t(key);
+    element.placeholder = translation;
+  });
+  
+  // Aplicar titles/tooltips
+  document.querySelectorAll('[data-i18n-title]').forEach(element => {
+    const key = element.getAttribute('data-i18n-title');
+    const translation = t(key);
+    element.title = translation;
+  });
+}
+
+// Cargar traducciones desde el main process
+async function loadTranslations() {
+  try {
+    currentLocale = await window.api.getLocale();
+    translations = await window.api.getTranslations();
+    applyTranslations();
+    
+    // Actualizar selector de idioma
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect) {
+      languageSelect.value = currentLocale;
+    }
+  } catch (error) {
+    console.error('Error cargando traducciones:', error);
+  }
+}
+
+// Cambiar idioma
+async function changeLanguage(locale) {
+  try {
+    const result = await window.api.setLocale(locale);
+    if (result.success) {
+      await loadTranslations();
+      console.log(`✅ Idioma cambiado a: ${locale}`);
+      
+      // Recargar datos para actualizar textos dinámicos
+      loadAccounts();
+      updateSessionDisplay();
+    }
+  } catch (error) {
+    console.error('Error cambiando idioma:', error);
+  }
+}
+
 // COLLAPSIBLE SECTIONS FUNCTIONALITY
 document.addEventListener('DOMContentLoaded', () => {
   const sectionHeaders = document.querySelectorAll('.section-header');
@@ -68,6 +159,7 @@ const addBtn = document.getElementById('addBtn');
 const resetBtn = document.getElementById('resetBtn');
 const toggleOverlayBtn = document.getElementById('toggleOverlayBtn');
 const tryHardBtn = document.getElementById('tryHardBtn');
+const toggleSpotifyBtn = document.getElementById('toggleSpotifyBtn');
 const toggleMultiModeBtn = document.getElementById('toggleMultiModeBtn');
 const copyPathBtn = document.getElementById('copyPathBtn');
 const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
@@ -93,8 +185,19 @@ const multiAccountsCount = document.getElementById('multiAccountsCount');
 const applyMultiConfigBtn = document.getElementById('applyMultiConfigBtn');
 const resetMultiConfigBtn = document.getElementById('resetMultiConfigBtn');
 
+// SETTINGS ELEMENTS
+const languageSelect = document.getElementById('languageSelect');
+
 let overlayVisible = true;
 let tryHardMode = false;
+
+// LANGUAGE SELECTOR
+if (languageSelect) {
+  languageSelect.addEventListener('change', async (e) => {
+    const newLocale = e.target.value;
+    await changeLanguage(newLocale);
+  });
+}
 
 // Position Controls
 if (applyPositionBtn) {
@@ -290,6 +393,36 @@ tryHardBtn.addEventListener('click', async () => {
   }
 });
 
+// Spotify Toggle
+let spotifyEnabled = false;
+
+toggleSpotifyBtn.addEventListener('click', async () => {
+  spotifyEnabled = !spotifyEnabled;
+  
+  const result = await window.api.toggleSpotify(spotifyEnabled);
+  
+  if (result.success) {
+    if (spotifyEnabled) {
+      toggleSpotifyBtn.classList.add('active');
+      toggleSpotifyBtn.textContent = t('sections.sessionStats.spotify_on');
+    } else {
+      toggleSpotifyBtn.classList.remove('active');
+      toggleSpotifyBtn.textContent = t('sections.sessionStats.spotify_off');
+    }
+  }
+});
+
+// Cargar estado inicial de Spotify
+async function loadSpotifyStatus() {
+  const status = await window.api.getSpotifyStatus();
+  spotifyEnabled = status.enabled;
+  
+  if (spotifyEnabled) {
+    toggleSpotifyBtn.classList.add('active');
+    toggleSpotifyBtn.textContent = t('sections.sessionStats.spotify_on');
+  }
+}
+
 // Load accounts
 async function loadAccounts() {
   const accounts = await window.api.getAccounts();
@@ -420,6 +553,11 @@ function updateSessionDisplay(data) {
       </div>
     </div>
   `;
+  
+  // Mostrar botón de Spotify cuando hay sesión activa
+  if (toggleSpotifyBtn) {
+    toggleSpotifyBtn.style.display = 'inline-block';
+  }
 }
 
 // Listen for session updates
@@ -529,7 +667,9 @@ if (resetMultiConfigBtn) {
 }
 
 // Initial load
+loadTranslations(); // Cargar traducciones primero
 loadAccounts();
+loadSpotifyStatus(); // Cargar estado de Spotify
 window.api.getSessionData().then(updateSessionDisplay);
 
 // Verificar API key al inicio

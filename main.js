@@ -7,6 +7,8 @@ const SessionManager = require('./src/sessionManager');
 const AccountManager = require('./src/accountManager');
 const MultiModeManager = require('./src/multiModeManager');
 const MultiSessionManager = require('./src/multiSessionManager');
+const I18n = require('./i18n');
+const SpotifyDetector = require('./src/spotifyDetector');
 
 const store = new Store();
 let mainWindow;
@@ -18,6 +20,16 @@ let multiModeManager;
 let multiSessionManager;
 let tryHardMode = false;
 let currentMode = 'SINGLE'; // 'SINGLE' | 'MULTI'
+
+// Sistema de Spotify
+let spotifyDetector;
+let spotifyInterval = null;
+let spotifyEnabled = false; // Toggle para mostrar/ocultar Spotify
+let currentSpotifyTrack = null;
+
+// Sistema de internacionalización
+const savedLocale = store.get('locale', 'es'); // Default: español
+const i18n = new I18n(savedLocale);
 
 // Sistema de caché para MULTI mode
 let multiModeCache = new Map(); // key: puuid, value: { data, timestamp }
@@ -51,7 +63,7 @@ function createOverlayWindow() {
   
   overlayWindow = new BrowserWindow({
     width: 340,
-    height: 150,
+    height: 150, // Spotify ahora está dentro del espacio existente
     x: savedPosition.x,
     y: savedPosition.y,
     transparent: true,
@@ -93,6 +105,10 @@ app.whenReady().then(() => {
   accountManager = new AccountManager(store);
   multiModeManager = new MultiModeManager(accountManager, handleMultiModeEvent);
   multiSessionManager = new MultiSessionManager();
+  spotifyDetector = new SpotifyDetector();
+  
+  // Cargar configuración de Spotify
+  spotifyEnabled = store.get('spotifyEnabled', false);
   
   createMainWindow();
   createOverlayWindow();
@@ -101,6 +117,11 @@ app.whenReady().then(() => {
   const activeAccount = accountManager.getActiveAccount();
   if (activeAccount) {
     startTracking(activeAccount);
+  }
+  
+  // Iniciar detección de Spotify si está habilitado
+  if (spotifyEnabled) {
+    startSpotifyDetection();
   }
 });
 
@@ -168,12 +189,36 @@ ipcMain.handle('set-active-account', async (event, puuid) => {
 });
 
 ipcMain.handle('get-session-data', () => {
-  return sessionManager.getSessionStats();
+  const activeAccount = accountManager.getActiveAccount();
+  if (!activeAccount) {
+    return null;
+  }
+  
+  const accountName = `${activeAccount.gameName}#${activeAccount.tagLine}`;
+  const sessionStats = multiSessionManager.getSessionStats(activeAccount.puuid, accountName);
+  const session = multiSessionManager.sessions.get(activeAccount.puuid);
+  
+  return {
+    accountName: accountName,
+    tier: sessionStats.tier,
+    rank: sessionStats.rank,
+    lp: sessionStats.lp,
+    totalWinrate: sessionStats.totalWinrate,
+    totalWins: session?.rankedInfo?.totalWins || 0,
+    totalLosses: session?.rankedInfo?.totalLosses || 0,
+    sessionWins: sessionStats.sessionWins,
+    sessionLosses: sessionStats.sessionLosses,
+    sessionNetLP: sessionStats.sessionNetLP,
+    sessionWinrate: sessionStats.sessionWinrate
+  };
 });
 
 ipcMain.handle('reset-session', () => {
-  sessionManager.resetSession();
-  updateOverlay();
+  const activeAccount = accountManager.getActiveAccount();
+  if (activeAccount) {
+    multiSessionManager.resetSession(activeAccount.puuid);
+    updateOverlay();
+  }
   return { success: true };
 });
 
@@ -435,6 +480,54 @@ ipcMain.handle('window-is-maximized', () => {
   return mainWindow ? mainWindow.isMaximized() : false;
 });
 
+// I18N HANDLERS
+ipcMain.handle('get-locale', () => {
+  return i18n.getLocale();
+});
+
+ipcMain.handle('set-locale', (event, locale) => {
+  try {
+    if (i18n.setLocale(locale)) {
+      store.set('locale', locale);
+      console.log(`✅ Idioma cambiado a: ${locale}`);
+      return { success: true };
+    }
+    return { success: false, error: 'Idioma no disponible' };
+  } catch (error) {
+    console.error('Error cambiando idioma:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-available-locales', () => {
+  return i18n.getAvailableLocales();
+});
+
+ipcMain.handle('get-translations', () => {
+  return i18n.getAll();
+});
+
+// SPOTIFY HANDLERS
+ipcMain.handle('toggle-spotify', (event, enabled) => {
+  spotifyEnabled = enabled;
+  store.set('spotifyEnabled', enabled);
+  
+  if (enabled) {
+    startSpotifyDetection();
+  } else {
+    stopSpotifyDetection();
+  }
+  
+  return { success: true, enabled: spotifyEnabled };
+});
+
+ipcMain.handle('get-spotify-status', () => {
+  return { 
+    enabled: spotifyEnabled,
+    currentTrack: currentSpotifyTrack
+  };
+});
+
 // === MULTI MODE IPC HANDLERS ===
 
 ipcMain.handle('toggle-mode', (event, mode) => {
@@ -467,9 +560,13 @@ let trackingInterval;
 async function startTracking(account) {
   stopTracking();
   
-  // IMPORTANTE: Setear nombre ANTES de resetear sesión
-  sessionManager.setActiveAccount(account.gameName, account.tagLine);
-  sessionManager.resetSession();
+  const accountName = `${account.gameName}#${account.tagLine}`;
+  
+  // Usar multiSessionManager para SINGLE mode también
+  multiSessionManager.initSession(account.puuid, accountName);
+  
+  // NO resetear la sesión - mantenerla entre modos
+  // multiSessionManager.resetSession(account.puuid); // ← Comentado
   
   await updateRankedData(account);
   
@@ -478,7 +575,7 @@ async function startTracking(account) {
     await checkForNewMatches(account);
   }, config.pollingInterval);
   
-  console.log(`Tracking iniciado para ${account.gameName}#${account.tagLine}`);
+  console.log(`✅ Tracking iniciado para ${accountName}`);
 }
 
 function stopTracking() {
@@ -500,7 +597,7 @@ async function updateRankedData(account) {
     // rankedData puede ser array vacío si el jugador no tiene ranked
     if (!rankedData || rankedData.length === 0) {
       console.log(`${account.gameName} no tiene datos ranked este split`);
-      sessionManager.updateRankedInfo({
+      multiSessionManager.updateRankedInfo(account.puuid, {
         tier: 'UNRANKED',
         rank: '',
         lp: 0,
@@ -514,7 +611,7 @@ async function updateRankedData(account) {
     const soloQueue = rankedData.find(q => q.queueType === 'RANKED_SOLO_5x5');
     
     if (soloQueue) {
-      sessionManager.updateRankedInfo({
+      multiSessionManager.updateRankedInfo(account.puuid, {
         tier: soloQueue.tier,
         rank: soloQueue.rank,
         lp: soloQueue.leaguePoints,
@@ -524,7 +621,7 @@ async function updateRankedData(account) {
       console.log(`Ranked actualizado: ${soloQueue.tier} ${soloQueue.rank} ${soloQueue.leaguePoints} LP`);
     } else {
       console.log(`${account.gameName} no tiene ranked solo 5v5 (solo flex/otros modos)`);
-      sessionManager.updateRankedInfo({
+      multiSessionManager.updateRankedInfo(account.puuid, {
         tier: 'UNRANKED',
         rank: '',
         lp: 0,
@@ -554,25 +651,32 @@ async function checkForNewMatches(account) {
       return;
     }
     
+    // Obtener sesión de multiSessionManager
+    const session = multiSessionManager.sessions.get(account.puuid);
+    if (!session) {
+      console.error('Sesión no encontrada para', account.puuid);
+      return;
+    }
+    
     // Guardar LP y rank ANTES de procesar
-    const lpBefore = sessionManager.rankedInfo.lp;
-    const tierBefore = sessionManager.rankedInfo.tier;
-    const rankBefore = sessionManager.rankedInfo.rank;
+    const lpBefore = session.rankedInfo.lp;
+    const tierBefore = session.rankedInfo.tier;
+    const rankBefore = session.rankedInfo.rank;
     
     for (const matchId of recentMatches) {
-      if (sessionManager.isMatchProcessed(matchId)) continue;
+      if (multiSessionManager.isMatchProcessed(account.puuid, matchId)) continue;
       
       const matchData = await riotApi.getMatchData(matchId);
       
       // Verificar que sea ranked solo y posterior al inicio de sesión
       if (matchData.info.queueId !== 420) continue;
-      if (matchData.info.gameEndTimestamp < sessionManager.sessionStart) continue;
+      if (matchData.info.gameEndTimestamp < session.sessionStart) continue;
       
       const participant = matchData.info.participants.find(p => p.puuid === account.puuid);
       if (!participant) continue;
       
-      // Marcar partida como procesada primero
-      sessionManager.addMatch(matchId, participant.win, 0);
+      // Marcar partida como procesada
+      multiSessionManager.addMatch(account.puuid, matchId, participant.win);
       
       console.log(`✓ Nueva partida: ${participant.win ? 'WIN' : 'LOSS'}`);
     }
@@ -588,26 +692,28 @@ async function checkForNewMatches(account) {
         const tierAfter = soloQueue.tier;
         const rankAfter = soloQueue.rank;
         
-        // Detectar si hubo cambio de tier/rank (promoción o demotion)
+        // Detectar si hubo cambio de tier/rank
         const rankChanged = (tierBefore !== tierAfter) || (rankBefore !== rankAfter);
         
         let lpDiff = 0;
         
         if (rankChanged) {
-          // Hubo promoción o demotion
+          // Hubo cambio de división
           const beforeRankValue = getRankValue(tierBefore, rankBefore);
           const afterRankValue = getRankValue(tierAfter, rankAfter);
           
           if (afterRankValue > beforeRankValue) {
-            // PROMOCIÓN (ej: E2 → E1)
-            // Calculamos: (100 - LP_antes) + LP_después
+            // SUBIDA DE DIVISIÓN (ej: D3 90LP + WIN 30LP = D2 20LP)
+            // Ya no hay promociones - los LP continúan sumando
+            // lpDiff = (100 - lpBefore) + lpAfter
             lpDiff = (100 - lpBefore) + lpAfter;
-            console.log(`   🎉 PROMOCIÓN: ${tierBefore} ${rankBefore} ${lpBefore}LP → ${tierAfter} ${rankAfter} ${lpAfter}LP (+${lpDiff}LP)`);
+            console.log(`   🎉 SUBIDA: ${tierBefore} ${rankBefore} ${lpBefore}LP → ${tierAfter} ${rankAfter} ${lpAfter}LP (+${lpDiff}LP)`);
           } else {
-            // DEMOTION (ej: E1 → E2)
-            // Calculamos: -(LP_antes + (75 - LP_después))
-            lpDiff = -(lpBefore + (75 - lpAfter));
-            console.log(`   ⚠️ DEMOTION: ${tierBefore} ${rankBefore} ${lpBefore}LP → ${tierAfter} ${rankAfter} ${lpAfter}LP (${lpDiff}LP)`);
+            // BAJADA DE DIVISIÓN (ej: D2 5LP - LOSS 20LP = D3 85LP)
+            // Al bajar pierdes LP y bajas con LP restantes
+            // lpDiff = -(lpBefore + (100 - lpAfter))
+            lpDiff = -(lpBefore + (100 - lpAfter));
+            console.log(`   ⚠️ BAJADA: ${tierBefore} ${rankBefore} ${lpBefore}LP → ${tierAfter} ${rankAfter} ${lpAfter}LP (${lpDiff}LP)`);
           }
         } else {
           // Sin cambio de rank, cálculo normal
@@ -618,10 +724,10 @@ async function checkForNewMatches(account) {
           }
         }
         
-        // Actualizar Net LP
-        sessionManager.sessionNetLP += lpDiff;
+        // Actualizar Net LP en la sesión
+        session.sessionNetLP += lpDiff;
         
-        sessionManager.updateRankedInfo({
+        multiSessionManager.updateRankedInfo(account.puuid, {
           tier: soloQueue.tier,
           rank: soloQueue.rank,
           lp: soloQueue.leaguePoints,
@@ -671,6 +777,73 @@ function getRankValue(tier, rank) {
   return (tiers[tier] || 0) * 10 + (ranks[rank] || 0);
 }
 
+// === SPOTIFY FUNCTIONS ===
+
+function startSpotifyDetection() {
+  if (spotifyInterval) {
+    clearInterval(spotifyInterval);
+  }
+  
+  // Actualizar cada 3 segundos
+  spotifyInterval = setInterval(async () => {
+    await updateSpotifyTrack();
+  }, 3000);
+  
+  // Primera actualización inmediata
+  updateSpotifyTrack();
+  
+  console.log('🎵 Detección de Spotify iniciada');
+}
+
+function stopSpotifyDetection() {
+  if (spotifyInterval) {
+    clearInterval(spotifyInterval);
+    spotifyInterval = null;
+  }
+  
+  currentSpotifyTrack = null;
+  
+  // Notificar al overlay que Spotify está deshabilitado
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('update-spotify', null);
+  }
+  
+  console.log('🎵 Detección de Spotify detenida');
+}
+
+async function updateSpotifyTrack() {
+  try {
+    console.log('🔍 Intentando detectar Spotify...');
+    const track = await spotifyDetector.getCurrentTrack();
+    
+    if (!track) {
+      console.log('ℹ️ No se detectó ninguna canción');
+    }
+    
+    // Solo actualizar si cambió
+    const trackString = track ? spotifyDetector.formatTrack(track) : null;
+    
+    if (trackString !== currentSpotifyTrack) {
+      currentSpotifyTrack = trackString;
+      
+      // Enviar al overlay
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.webContents.send('update-spotify', currentSpotifyTrack);
+        console.log('📤 Enviado al overlay:', currentSpotifyTrack || 'null');
+      }
+      
+      if (trackString) {
+        console.log(`✅ Spotify actualizado: ${trackString}`);
+      }
+    } else {
+      console.log('ℹ️ Sin cambios en Spotify');
+    }
+  } catch (error) {
+    console.error('❌ Error actualizando Spotify:', error.message);
+    console.error(error.stack);
+  }
+}
+
 // === MULTI MODE FUNCTIONS ===
 
 function handleMultiModeEvent(event) {
@@ -706,7 +879,40 @@ async function updateOverlayMultiMode(account) {
     // Inicializar sesión si no existe
     multiSessionManager.initSession(account.puuid, accountName);
     
-    // Verificar caché
+    // PROCESAR PARTIDAS RECIENTES (igual que en SINGLE mode)
+    try {
+      const recentMatches = await riotApi.getRecentMatches(account.puuid, 5);
+      
+      if (recentMatches && recentMatches.length > 0) {
+        for (const matchId of recentMatches) {
+          // Si ya procesamos esta partida, skip
+          if (multiSessionManager.isMatchProcessed(account.puuid, matchId)) continue;
+          
+          const matchData = await riotApi.getMatchData(matchId);
+          
+          // Solo ranked solo/duo
+          if (matchData.info.queueId !== 420) continue;
+          
+          // Solo partidas después del inicio de la app
+          const session = multiSessionManager.sessions.get(account.puuid);
+          if (matchData.info.gameEndTimestamp < session.sessionStart) continue;
+          
+          const participant = matchData.info.participants.find(p => p.puuid === account.puuid);
+          if (!participant) continue;
+          
+          // Añadir partida a la sesión
+          const wasNew = multiSessionManager.addMatch(account.puuid, matchId, participant.win);
+          
+          if (wasNew) {
+            console.log(`✅ [MULTI] ${accountName}: Nueva partida detectada - ${participant.win ? 'WIN' : 'LOSS'}`);
+          }
+        }
+      }
+    } catch (matchError) {
+      console.error(`Error procesando partidas de ${accountName}:`, matchError.message);
+    }
+    
+    // Verificar caché para ranked data
     const cached = multiModeCache.get(account.puuid);
     const now = Date.now();
     let rankedData = null;
@@ -755,21 +961,24 @@ async function updateOverlayMultiMode(account) {
     // Obtener stats de sesión desde MultiSessionManager
     const sessionStats = multiSessionManager.getSessionStats(account.puuid, accountName);
     
+    // Obtener la sesión directamente para acceder a rankedInfo
+    const session = multiSessionManager.sessions.get(account.puuid);
+    
     let accountData = {
       accountName: accountName,
       tier: sessionStats.tier,
       rank: sessionStats.rank,
       lp: sessionStats.lp,
       totalWinrate: sessionStats.totalWinrate,
-      totalWins: sessionStats.totalWins,        // AÑADIDO
-      totalLosses: sessionStats.totalLosses,    // AÑADIDO
+      totalWins: session?.rankedInfo?.totalWins || 0,
+      totalLosses: session?.rankedInfo?.totalLosses || 0,
       sessionWins: sessionStats.sessionWins,
       sessionLosses: sessionStats.sessionLosses,
       sessionNetLP: sessionStats.sessionNetLP,
       sessionWinrate: sessionStats.sessionWinrate,
-      status: 'normal', // TODO: Detectar hotStreak, decay, etc
+      status: 'normal',
       mode: 'MULTI',
-      tryHardMode: tryHardMode, // Añadir tryhard mode
+      tryHardMode: tryHardMode,
       multiInfo: {
         currentIndex: multiModeManager.currentIndex,
         totalAccounts: accountManager.getAllAccounts().length
@@ -793,7 +1002,13 @@ async function updateOverlayMultiMode(account) {
         fs.mkdirSync(obsDir, { recursive: true });
       }
       
-      fs.writeFileSync(obsDataPath, JSON.stringify(accountData, null, 2));
+      // Añadir Spotify al data si está habilitado
+      const obsData = {
+        ...accountData,
+        spotifyTrack: spotifyEnabled ? currentSpotifyTrack : null
+      };
+      
+      fs.writeFileSync(obsDataPath, JSON.stringify(obsData, null, 2));
     } catch (error) {
       console.error('Error escribiendo data.json en MULTI mode:', error);
     }
@@ -842,11 +1057,35 @@ function switchToSingleMode() {
 }
 
 function updateOverlay() {
-  const data = sessionManager.getSessionStats();
+  // Obtener cuenta activa
+  const activeAccount = accountManager.getActiveAccount();
+  if (!activeAccount) {
+    console.log('No hay cuenta activa');
+    return;
+  }
   
-  // Añadir estado tryhard y modo actual
-  data.tryHardMode = tryHardMode;
-  data.mode = currentMode; // 'SINGLE' o 'MULTI'
+  const accountName = `${activeAccount.gameName}#${activeAccount.tagLine}`;
+  
+  // Usar multiSessionManager para obtener stats
+  const sessionStats = multiSessionManager.getSessionStats(activeAccount.puuid, accountName);
+  const session = multiSessionManager.sessions.get(activeAccount.puuid);
+  
+  const data = {
+    accountName: accountName,
+    tier: sessionStats.tier,
+    rank: sessionStats.rank,
+    lp: sessionStats.lp,
+    totalWinrate: sessionStats.totalWinrate,
+    totalWins: session?.rankedInfo?.totalWins || 0,
+    totalLosses: session?.rankedInfo?.totalLosses || 0,
+    sessionWins: sessionStats.sessionWins,
+    sessionLosses: sessionStats.sessionLosses,
+    sessionNetLP: sessionStats.sessionNetLP,
+    sessionWinrate: sessionStats.sessionWinrate,
+    status: 'normal',
+    tryHardMode: tryHardMode,
+    mode: currentMode // 'SINGLE' o 'MULTI'
+  };
   
   // Actualizar ventana overlay de Electron
   if (overlayWindow && !overlayWindow.isDestroyed()) {
@@ -867,7 +1106,13 @@ function updateOverlay() {
       fs.mkdirSync(obsDir, { recursive: true });
     }
     
-    fs.writeFileSync(obsDataPath, JSON.stringify(data, null, 2));
+    // Añadir Spotify al data si está habilitado
+    const obsData = {
+      ...data,
+      spotifyTrack: spotifyEnabled ? currentSpotifyTrack : null
+    };
+    
+    fs.writeFileSync(obsDataPath, JSON.stringify(obsData, null, 2));
   } catch (error) {
     console.error('Error escribiendo data.json:', error);
   }

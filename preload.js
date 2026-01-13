@@ -27,6 +27,17 @@ contextBridge.exposeInMainWorld('api', {
   closeWindow: () => ipcRenderer.invoke('window-close'),
   isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
   
+  // I18N
+  getLocale: () => ipcRenderer.invoke('get-locale'),
+  setLocale: (locale) => ipcRenderer.invoke('set-locale', locale),
+  getAvailableLocales: () => ipcRenderer.invoke('get-available-locales'),
+  getTranslations: () => ipcRenderer.invoke('get-translations'),
+  
+  // SPOTIFY
+  toggleSpotify: (enabled) => ipcRenderer.invoke('toggle-spotify', enabled),
+  getSpotifyStatus: () => ipcRenderer.invoke('get-spotify-status'),
+  onUpdateSpotify: (callback) => ipcRenderer.on('update-spotify', (event, track) => callback(track)),
+  
   onUpdateOverlay: (callback) => ipcRenderer.on('update-overlay', (event, data) => callback(data)),
   onUpdateSession: (callback) => ipcRenderer.on('update-session', (event, data) => callback(data)),
   onUpdateMultiDisplay: (callback) => ipcRenderer.on('update-multi-display', (event, data) => callback(data))

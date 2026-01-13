@@ -1,16 +1,21 @@
 {
-  "accountName": "Sykii#1509",
-  "tier": "DIAMOND",
-  "rank": "IV",
-  "lp": 10,
-  "totalWinrate": 55,
-  "totalWins": 6,
-  "totalLosses": 5,
+  "accountName": "DogHouseMEGAWAYS#GAMDO",
+  "tier": "MASTER",
+  "rank": "I",
+  "lp": 63,
+  "totalWinrate": 73,
+  "totalWins": 19,
+  "totalLosses": 7,
   "sessionWins": 0,
   "sessionLosses": 0,
   "sessionNetLP": 0,
   "sessionWinrate": 0,
-  "sessionStart": 1768134488824,
-  "tryHardMode": false,
-  "mode": "SINGLE"
+  "status": "normal",
+  "mode": "MULTI",
+  "tryHardMode": true,
+  "multiInfo": {
+    "currentIndex": 2,
+    "totalAccounts": 3
+  },
+  "spotifyTrack": "La Oreja de Van Gogh - Rosas"
 }

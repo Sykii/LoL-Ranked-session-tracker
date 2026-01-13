@@ -102,6 +102,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      position: relative; /* Para que Spotify se posicione relativo a esta sección */
     }
 
     .rank-icon {
@@ -151,7 +152,7 @@
     }
 
     .rank-wr {
-      font-size: 9px;
+      font-size: 10px; /* Aumentado de 9px a 10px */
       color: #9ca3af;
       font-weight: 500;
       line-height: 1.1;
@@ -244,15 +245,6 @@
       color: #f87171;
     }
 
-    .stat-value.updated {
-      animation: pulse 0.5s ease;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-
     /* Modo MULTI */
     .overlay-container.multi-mode {
       border-color: rgba(147, 51, 234, 0.5);
@@ -340,7 +332,7 @@
 
     /* Transición entre cuentas */
     .overlay-container.transitioning {
-      animation: fadeSlide 0.5s ease-in-out !important;
+      animation: fadeSlide 0.5s ease-in-out;
     }
 
     @keyframes fadeSlide {
@@ -348,20 +340,90 @@
       50% { opacity: 0; transform: translateX(-20px); }
       100% { opacity: 1; transform: translateX(0); }
     }
+    /* ============================================
+       SPOTIFY INTEGRATION
+       ============================================ */
+    
+    /* SPOTIFY CURRENT TRACK (posicionado absolutamente debajo del logo) */
+    .spotify-track {
+      position: absolute;
+      left: 0;
+      top: 68px;
+      width: 130px;
+      height: 16px;
+      overflow: hidden;
+      display: none;
+      padding: 0;
+      line-height: 16px;
+    }
+    
+    .spotify-track.visible {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .spotify-track-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    
+    .spotify-track-text {
+      font-size: 12px; /* Aumentado de 11px a 12px */
+      color: #1db954;
+      font-weight: 700; /* Bold - aumentado de 600 a 700 */
+      white-space: nowrap;
+      display: inline-block;
+      animation: scroll-text 20s linear infinite;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+    
+    @keyframes scroll-text {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    
+    .spotify-icon {
+      color: #1db954;
+      font-size: 12px; /* Aumentado de 11px a 12px */
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    
+    .overlay-container.tryhard .spotify-track-text {
+      color: #1db954;
+    }
+    
+    .overlay-container.tryhard .spotify-icon {
+      color: #1db954;
+    }
   </style>
 </head>
 <body>
   <div class="overlay-container">
-    <!-- ACCOUNT NAME -->
     <div class="account-header">
       <div class="account-name" id="accountName">No Account</div>
     </div>
     
-    <!-- MAIN CONTENT: 2 COLUMNAS -->
     <div class="main-content">
-      <!-- COLUMNA IZQUIERDA: RANK -->
       <div class="rank-section">
         <img id="rankIcon" class="rank-icon" src="../assets/ranks/unranked.png" alt="Rank">
+        
+        <!-- SPOTIFY CURRENT TRACK (debajo del logo) -->
+        <div class="spotify-track" id="spotifyTrack">
+          <span class="spotify-icon">🎵</span>
+          <div class="spotify-track-container">
+            <span class="spotify-track-text" id="spotifyText"></span>
+          </div>
+        </div>
         
         <div class="rank-info">
           <div class="rank-tier" id="rankTier">UNRANKED</div>
@@ -371,7 +433,6 @@
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: SESSION -->
       <div class="session-section">
         <div class="session-header">
           <div class="session-title">SESIÓN</div>
@@ -393,8 +454,7 @@
   </div>
 
   <script>
-    let lastData = null;
-    let isAnimating = false; // Control de animación
+    let lastAccountName = null;
 
     function getRankIcon(tier) {
       const tierMap = {
@@ -415,88 +475,41 @@
       return `../assets/ranks/${iconName}.png`;
     }
 
-    async function updateOverlay() {
-      try {
-        const response = await fetch('data.json?t=' + Date.now());
-        
-        if (!response.ok) {
-          throw new Error('No se pudo cargar data.json');
-        }
-
-        const data = await response.json();
-
-        // Detectar cambios para animar
-        const winsChanged = lastData && lastData.sessionWins !== data.sessionWins;
-        const lossesChanged = lastData && lastData.sessionLosses !== data.sessionLosses;
-        const accountChanged = lastData && lastData.accountName !== data.accountName;
-
-        // Detectar modo
-        const isMultiMode = data.mode === 'MULTI';
-        
-        // Detectar cambio de cuenta en MULTI mode para animación
-        const container = document.querySelector('.overlay-container');
-        
-        // Solo animar si cambió cuenta Y no está animando actualmente
-        if (isMultiMode && accountChanged && !isAnimating) {
-          console.log('🔄 Cambio de cuenta detectado:', lastData.accountName, '→', data.accountName);
-          
-          isAnimating = true;
-          container.classList.add('transitioning');
-          
-          // Actualizar DOM en el momento medio de la animación (cuando opacity es 0)
-          setTimeout(() => {
-            updateDOMElements(data, winsChanged, lossesChanged);
-            lastData = data; // Actualizar después de aplicar cambios
-          }, 250); // Mitad de 500ms
-          
-          setTimeout(() => {
-            container.classList.remove('transitioning');
-            isAnimating = false;
-          }, 500);
-        } else {
-          // Si no cambió cuenta O no es MULTI, actualizar inmediatamente
-          updateDOMElements(data, winsChanged, lossesChanged);
-          lastData = data;
-        }
-        
-        // Aplicar modo MULTI
-        if (isMultiMode) {
-          container.classList.add('multi-mode');
-        } else {
-          container.classList.remove('multi-mode');
-        }
-
-        // Aplicar modo tryhard (funciona en SINGLE y MULTI)
-        if (data.tryHardMode) {
-          container.classList.add('tryhard');
-        } else {
-          container.classList.remove('tryhard');
-        }
-      } catch (error) {
-        console.error('Error actualizando overlay:', error);
+    // Función para actualizar el overlay con datos
+    function updateOverlayData(data) {
+      const container = document.querySelector('.overlay-container');
+      const isMultiMode = data.mode === 'MULTI';
+      
+      if (isMultiMode && lastAccountName && lastAccountName !== data.accountName) {
+        container.classList.add('transitioning');
+        setTimeout(() => container.classList.remove('transitioning'), 500);
       }
-    }
+      
+      lastAccountName = isMultiMode ? data.accountName : null;
+      
+      if (isMultiMode) {
+        container.classList.add('multi-mode');
+      } else {
+        container.classList.remove('multi-mode');
+      }
+      
+      if (data.tryHardMode) {
+        container.classList.add('tryhard');
+      } else {
+        container.classList.remove('tryhard');
+      }
 
-    // Función separada para actualizar elementos del DOM
-    function updateDOMElements(data, winsChanged, lossesChanged) {
-      // Actualizar nombre de cuenta
       document.getElementById('accountName').textContent = data.accountName || 'No Account';
 
-      // Actualizar icono de rank
       const rankIconEl = document.getElementById('rankIcon');
-      const newIcon = getRankIcon(data.tier);
-      if (rankIconEl.src !== newIcon) {
-        rankIconEl.src = newIcon;
-      }
+      rankIconEl.src = getRankIcon(data.tier);
 
-      // Actualizar rank info
       const rankText = data.tier !== 'UNRANKED' 
         ? `${data.tier} ${data.rank}` 
         : 'UNRANKED';
       document.getElementById('rankTier').textContent = rankText;
       document.getElementById('rankLP').textContent = `${data.lp} LP`;
       
-      // Total WR con W-L
       const totalWins = data.totalWins || 0;
       const totalLosses = data.totalLosses || 0;
       const totalWRText = totalWins > 0 || totalLosses > 0 
@@ -504,40 +517,54 @@
         : `${data.totalWinrate}% WR`;
       document.getElementById('totalWR').textContent = totalWRText;
 
-      // Net LP
       const netLPEl = document.getElementById('netLP');
       const netLP = data.sessionNetLP || 0;
       netLPEl.textContent = `${netLP >= 0 ? '+' : ''}${netLP} LP`;
       netLPEl.className = 'rank-net-lp ' + (netLP >= 0 ? 'positive' : 'negative');
 
-      // Session WR
       document.getElementById('sessionWR').textContent = `${data.sessionWinrate}% WR`;
+      document.getElementById('sessionWins').textContent = data.sessionWins || 0;
+      document.getElementById('sessionLosses').textContent = data.sessionLosses || 0;
 
-      // Wins/Losses con animación
-      const winsEl = document.getElementById('sessionWins');
-      const lossesEl = document.getElementById('sessionLosses');
-      
-      winsEl.textContent = data.sessionWins || 0;
-      lossesEl.textContent = data.sessionLosses || 0;
-
-      if (winsChanged) {
-        winsEl.classList.add('updated');
-        setTimeout(() => winsEl.classList.remove('updated'), 500);
-      }
-      if (lossesChanged) {
-        lossesEl.classList.add('updated');
-        setTimeout(() => lossesEl.classList.remove('updated'), 500);
-      }
-
-      // Sesión siempre visible (en SINGLE y MULTI)
-      const sessionSection = document.querySelector('.session-section');
-      sessionSection.style.display = 'flex';
+      document.querySelector('.session-section').style.display = 'flex';
       netLPEl.style.display = 'block';
+      
+      // Actualizar Spotify
+      const spotifyTrack = document.getElementById('spotifyTrack');
+      const spotifyText = document.getElementById('spotifyText');
+      
+      if (spotifyTrack && spotifyText) {
+        if (data.spotifyTrack) {
+          spotifyText.textContent = data.spotifyTrack;
+          spotifyTrack.classList.add('visible');
+          spotifyText.style.animation = 'none';
+          setTimeout(() => {
+            spotifyText.style.animation = 'scroll-text 20s linear infinite';
+          }, 10);
+        } else {
+          spotifyTrack.classList.remove('visible');
+        }
+      }
+    }
+
+    // OBS: Cargar datos desde data.json cada 2 segundos
+    async function loadData() {
+      try {
+        const response = await fetch('data.json?t=' + Date.now());
+        const data = await response.json();
+        updateOverlayData(data);
+      } catch (error) {
+        console.error('Error cargando data.json:', error);
+      }
     }
 
     // Actualizar cada 2 segundos
-    updateOverlay();
-    setInterval(updateOverlay, 2000);
+    setInterval(loadData, 2000);
+    
+    // Primera carga
+    loadData();
+    
+    console.log('OBS Overlay iniciado - leyendo data.json cada 2s');
   </script>
 </body>
 </html>

@@ -11,14 +11,38 @@
   "build": {
     "appId": "com.loltracker.app",
     "productName": "LoL Session Tracker",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
     "win": {
-      "target": "nsis",
-      "icon": "build/icon.png"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LoL Session Tracker"
     },
     "files": [
       "**/*",
       "!**/*.md",
-      "!build/"
+      "!dist/**/*",
+      "!.git/**/*"
+    ],
+    "asarUnpack": [
+      "**/node_modules/electron-store/**/*"
     ]
   },
   "dependencies": {
